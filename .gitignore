@@ -1,0 +1,7 @@
+node_modules/
+dist/
+
+# Derived at build time from Asset/egypt.ply by scripts/prepare-splats.mjs
+public/splats/
+
+.DS_Store
