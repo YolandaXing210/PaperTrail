@@ -61,6 +61,28 @@ button {
     radial-gradient(circle at 76% 42%, #634316 0%, #1e1406 29%, #0d0803 66%);
 }
 
+/* Full-bleed cloud video behind the title screen */
+.intro-video-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Darkening / warming scrim so the title copy stays legible over the video */
+.intro-video-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(13, 8, 3, 0.92) 0%, rgba(13, 8, 3, 0.62) 46%, rgba(13, 8, 3, 0.08) 100%),
+    radial-gradient(circle at 76% 42%, rgba(99, 67, 22, 0.35) 0%, rgba(13, 8, 3, 0.28) 60%, rgba(13, 8, 3, 0.5) 100%);
+}
+
 .intro-glow {
   position: absolute;
   width: 60vw;

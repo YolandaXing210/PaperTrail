@@ -81,9 +81,10 @@ function deleteCustomWorld(id: string): Promise<void> {
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `
   <section id="intro" class="experience-screen intro-screen">
-    <div style="position: absolute; top: 22px; left: 22px; z-index: 10;">
-      <button class="admin-btn">⚙️ Admin</button>
-    </div>
+    <video class="intro-video-bg" autoplay loop muted playsinline preload="auto" aria-hidden="true">
+      <source src="/assets/intro-bg.mp4" type="video/mp4" />
+    </video>
+    <div class="intro-video-scrim" aria-hidden="true"></div>
     <div class="intro-glow"></div>
     <div class="intro-clouds" aria-hidden="true">
       <span class="cloud-layer cloud-layer-1"></span>
@@ -97,7 +98,7 @@ app.innerHTML = `
     <div class="intro-copy">
       <div class="eyebrow">A Gaussian Splat Flight Adventure</div>
       <div class="intro-tagline">Memories in Flight</div>
-      <h1>Fly Like a Pharaoh.</h1>
+      <h1>Paper Trail</h1>
       <p>Control the airplane using only your hands. Pilot your flight through historic and cultural worlds reconstructed as immersive Gaussian splats.</p>
       <button id="continue-button" class="primary-button">Continue</button>
     </div>
@@ -105,13 +106,10 @@ app.innerHTML = `
   </section>
 
   <section id="onboarding" class="experience-screen onboarding-screen hidden-screen">
-    <div style="position: absolute; top: 22px; left: 22px; z-index: 10;">
-      <button class="admin-btn">⚙️ Admin</button>
-    </div>
     <div class="onboarding-card">
       <div class="eyebrow">Flight briefing</div>
-      <h2>Your adventure begins in the first memory world.</h2>
-      <p>Steer through the environment, explore its details, and fly into the luminous portal to cross into the next culture.</p>
+      <h2>Your adventure begins.</h2>
+      <p>Steer, explore, and fly through the portal to the next world.</p>
       <div class="control-briefing-wrapper" style="display: flex; gap: 32px; justify-content: center; align-items: center; margin: 20px auto 28px; flex-wrap: wrap;">
         <div id="onboarding-wasd-layout" class="key-layout" aria-label="WASD controls" style="margin: 0;">
           <div></div><div class="keycap">W<span>Up</span></div><div></div>
@@ -121,12 +119,6 @@ app.innerHTML = `
           <div class="keycap" style="width: 180px; height: 50px; font-size: 16px;">Space Bar<span>Thrust</span></div>
           <div class="keycap" style="width: 180px; height: 50px; font-size: 16px;">Shift<span>Boost</span></div>
         </div>
-      </div>
-      <div class="briefing-grid">
-        <div><strong>Thrust</strong><span>Hold Space to fly forward.</span></div>
-        <div id="onboarding-steer-keyboard"><strong>Steer</strong><span>Use WASD or Arrow keys to guide.</span></div>
-        <div id="onboarding-steer-hand" style="display: none;"><strong>Steer</strong><span>Tilt hands left/right to bank, open/close them to pitch.</span></div>
-        <div><strong>Transition</strong><span>Enter the portal to reach world two.</span></div>
       </div>
       <button id="start-button" class="primary-button">Start adventure</button>
     </div>

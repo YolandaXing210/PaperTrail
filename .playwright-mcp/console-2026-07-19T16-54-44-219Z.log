@@ -1,0 +1,2 @@
+[    4510ms] [LOG] Video source path: /assets/VideoIntro.mp4 @ http://localhost:5174/src/main.ts?t=1784480079499:1704
+[    4823ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5174/favicon.ico:0
