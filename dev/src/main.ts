@@ -214,10 +214,14 @@ app.innerHTML = `
         <div id="tab-upload" class="tab-content">
           <!-- Portal Transitions Settings -->
           <div class="admin-section" style="margin-bottom: 16px;">
-            <h3>Transitions Settings</h3>
+            <h3>Transitions & Flight Settings</h3>
             <label class="switch-label">
               <input type="checkbox" id="portal-transition-toggle" />
               <span>Enable Portals & Transitions</span>
+            </label>
+            <label class="switch-label" style="margin-top: 10px; display: flex;">
+              <input type="checkbox" id="bobbing-animation-toggle" />
+              <span>Enable Airplane Bobbing Animation</span>
             </label>
           </div>
 
@@ -491,6 +495,7 @@ const adminToggleBtns = Array.from(
 const adminPanel = document.querySelector<HTMLDivElement>("#admin-panel")!;
 const adminCloseBtn = document.querySelector<HTMLButtonElement>("#admin-close-btn")!;
 const portalTransitionToggle = document.querySelector<HTMLInputElement>("#portal-transition-toggle")!;
+const bobbingAnimationToggle = document.querySelector<HTMLInputElement>("#bobbing-animation-toggle")!;
 const worldSelectDropdown = document.querySelector<HTMLSelectElement>("#world-select-dropdown")!;
 const plyDropzone = document.querySelector<HTMLDivElement>("#ply-dropzone")!;
 const plyFileInput = document.querySelector<HTMLInputElement>("#ply-file-input")!;
@@ -829,6 +834,7 @@ let planePitch = 0;
 // Dynamic worlds lists & state
 let activeWorldId = localStorage.getItem("activeWorldId") || "world-one";
 let enableTransitions = localStorage.getItem("enableTransitions") !== "false";
+let enableBobbing = localStorage.getItem("enableBobbing") !== "false";
 let customWorldsList: CustomWorldConfig[] = [];
 let activeBlobUrl: string | null = null;
 
@@ -1408,7 +1414,7 @@ function updatePlane(delta: number) {
 
 
   // Model scale animation (bobbing + speed warp)
-  const bob = Math.sin(performance.now() * 0.004) * 0.03;
+  const bob = enableBobbing ? Math.sin(performance.now() * 0.004) * 0.03 : 0;
   const targetScale = 1.0 + (boosting && advancing ? 0.08 : 0) + bob;
   planeModel.scale.setScalar(targetScale);
 
@@ -1674,6 +1680,11 @@ portalTransitionToggle.addEventListener("change", () => {
   }
 });
 
+bobbingAnimationToggle.addEventListener("change", () => {
+  enableBobbing = bobbingAnimationToggle.checked;
+  localStorage.setItem("enableBobbing", String(enableBobbing));
+});
+
 function populateWorldDropdown() {
   worldSelectDropdown.innerHTML = "";
   
@@ -1912,6 +1923,7 @@ async function setupAdminPanel() {
   await loadWorldsList();
   populateWorldDropdown();
   portalTransitionToggle.checked = enableTransitions;
+  bobbingAnimationToggle.checked = enableBobbing;
   
   const controlsHUD = document.querySelector<HTMLElement>(".controls");
   if (controlsHUD) {
