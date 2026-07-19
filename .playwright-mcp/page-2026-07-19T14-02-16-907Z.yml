@@ -1,4 +1,0 @@
-- generic [ref=f17e2]:
-  - button "Skip intro ▸" [ref=f17e41] [cursor=pointer]
-  - option "Elephants TRavels (Default)" [selected]
-  - generic: ✋ Hand Control Feed

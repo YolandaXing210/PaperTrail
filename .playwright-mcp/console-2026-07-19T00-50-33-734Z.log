@@ -1,7 +1,0 @@
-[   25305ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5173/favicon.ico:0
-[   37672ms] [LOG] Loaded 714071 splats. Starting Tiny LoD build... @ blob:http://localhost:5173/377c6f1d-863e-43dc-b334-71f132ab69be:1138
-[   39285ms] [LOG] Tiny LoD: 714071 -> 1080360 (1612.7000000476837 ms) @ blob:http://localhost:5173/377c6f1d-863e-43dc-b334-71f132ab69be:1150
-[  247863ms] ReferenceError: sceneModels is not defined
-    at http://localhost:5173/src/main.ts?t=1784422481437:1127:23
-    at onAnimationFrame (http://localhost:5173/node_modules/.vite/deps/chunk-IT3TP6RZ.js?v=417668a6:40488:37)
-    at onAnimationFrame (http://localhost:5173/node_modules/.vite/deps/chunk-IT3TP6RZ.js?v=417668a6:31354:5)

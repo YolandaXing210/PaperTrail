@@ -1,4 +1,0 @@
-[   26362ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5173/favicon.ico:0
-[   38024ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5173/favicon.ico:0
-[   48007ms] [LOG] Loaded 714071 splats. Starting Tiny LoD build... @ blob:http://localhost:5173/557775bb-4aa4-4852-a3b6-18bd2046ec34:1138
-[   49523ms] [LOG] Tiny LoD: 714071 -> 1080360 (1516.1000000238419 ms) @ blob:http://localhost:5173/557775bb-4aa4-4852-a3b6-18bd2046ec34:1150
