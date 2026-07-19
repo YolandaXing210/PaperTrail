@@ -611,6 +611,17 @@ h1 {
   transform: scale(1.02);
 }
 
+.admin-btn.btn-red {
+  background: rgba(255, 75, 75, 0.18);
+  border: 1px solid rgba(255, 75, 75, 0.45);
+  color: #ff9d9d;
+}
+
+.admin-btn.btn-red:hover {
+  background: rgba(255, 75, 75, 0.3);
+}
+
+
 .admin-panel-overlay {
   position: fixed;
   top: 0;

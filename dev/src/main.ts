@@ -462,6 +462,7 @@ app.innerHTML = `
           <div class="admin-section">
             <h3>Coordinates</h3>
             <button id="copy-coords-btn" class="admin-btn" style="width:100%; height:44px; display:block; border-radius:999px;">📋 Copy Model Coordinates</button>
+            <button id="save-model-transforms-btn" class="admin-btn btn-red" style="margin-top: 10px; width:100%; height:44px; display:block; border-radius:999px;">💾 Save & Apply for Gameplay</button>
             <pre id="coords-readout" class="coords-readout">No models loaded yet.</pre>
           </div>
         </div>
@@ -762,7 +763,7 @@ scene.add(objectTargetGroup);
 function playCollectChime() {
   try {
     const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    
+
     // Chime note 1
     const osc1 = audioCtx.createOscillator();
     const gain1 = audioCtx.createGain();
@@ -774,7 +775,7 @@ function playCollectChime() {
     gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
     osc1.start(audioCtx.currentTime);
     osc1.stop(audioCtx.currentTime + 0.4);
-    
+
     // Chime note 2 (slightly delayed and higher pitch)
     const osc2 = audioCtx.createOscillator();
     const gain2 = audioCtx.createGain();
@@ -1094,7 +1095,7 @@ function loadCollider(url: string) {
     url,
     (gltf) => {
       const model = gltf.scene;
-      
+
       // Override material to yellow wireframe
       model.traverse((child) => {
         if ((child as THREE.Mesh).isMesh) {
@@ -1118,7 +1119,7 @@ function loadCollider(url: string) {
       const adminPanel = document.querySelector("#admin-panel");
       const isAdminPanelOpen = adminPanel && !adminPanel.classList.contains("hidden-panel");
       colliderMaterial.visible = !!isAdminPanelOpen;
-      
+
       console.log("Mesh collider loaded successfully!");
     },
     undefined,
@@ -1376,7 +1377,7 @@ function updatePlane(delta: number) {
   const speed = advancing ? (boosting ? 16 : 8.5) : 1.8;
   desiredVelocity.copy(forwardVec).multiplyScalar(speed);
   velocity.lerp(desiredVelocity, 1 - Math.exp(-4 * delta));
-  
+
   plane.position.addScaledVector(velocity, delta);
 
   // Mesh collider collision detection and response
@@ -1394,7 +1395,7 @@ function updatePlane(delta: number) {
 
     if (intersects.length > 0 && intersects[0].distance < Math.max(moveDist, 0.1) + planeRadius + 0.5) {
       const hit = intersects[0];
-      
+
       // Compute correct normal transformed by the object's parent transforms
       const normal = hit.face ? hit.face.normal.clone() : new THREE.Vector3(0, 1, 0);
       normal.applyQuaternion(hit.object.quaternion);
@@ -1496,7 +1497,7 @@ function updatePlane(delta: number) {
   if (crosshair && crosshairDot && crosshairLine) {
     if (!isDragging) {
       crosshair.style.display = "block";
-      
+
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
       const cursorX = centerX + mouseX * centerX;
@@ -1618,14 +1619,14 @@ adminToggleBtns.forEach(btn => {
     const wasHidden = adminPanel.classList.contains("hidden-panel");
     adminPanel.classList.toggle("hidden-panel");
     keys.clear();
-    
+
     if (wasHidden) {
       // Just opened the admin panel!
       // If the splat is not loaded yet, load it now so they can preview it!
       if (!activeSplat) {
         void activateWorldById(activeWorldId);
       }
-      
+
       // Focus on the spawn helper
       const world = getCurrentWorldConfig(activeWorldId);
       if (world) {
@@ -1671,7 +1672,7 @@ portalTransitionToggle.addEventListener("change", () => {
   enableTransitions = portalTransitionToggle.checked;
   localStorage.setItem("enableTransitions", String(enableTransitions));
   portalGroup.visible = enableTransitions;
-  
+
   const controlsHUD = document.querySelector<HTMLElement>(".controls");
   if (controlsHUD) {
     controlsHUD.innerHTML = enableTransitions
@@ -1687,59 +1688,59 @@ bobbingAnimationToggle.addEventListener("change", () => {
 
 function populateWorldDropdown() {
   worldSelectDropdown.innerHTML = "";
-  
+
   WORLDS.forEach(w => {
     const opt = document.createElement("option");
     opt.value = w.id;
     opt.textContent = `${w.name} (Default)`;
     worldSelectDropdown.appendChild(opt);
   });
-  
+
   customWorldsList.forEach(w => {
     const opt = document.createElement("option");
     opt.value = w.id;
     opt.textContent = `${w.name} (Custom)`;
     worldSelectDropdown.appendChild(opt);
   });
-  
+
   worldSelectDropdown.value = activeWorldId;
 }
 
 function onWorldSelectChanged(id: string) {
   activeWorldId = id;
   localStorage.setItem("activeWorldId", id);
-  
+
   const world = getCurrentWorldConfig(id);
   if (world) {
     const isCustom = customWorldsList.some(w => w.id === id);
     if (isCustom) {
       customWorldProperties.classList.remove("hidden-section-ui");
       orientFallbackMsg.classList.add("hidden-section-ui");
-      
+
       propName.value = world.name;
       propCollider.value = world.colliderUrl || "";
       propScale.value = String(world.scale);
       propScaleSlider.value = String(world.scale);
       labelScale.textContent = world.scale.toFixed(1);
-      
+
       // Radians to degrees
       const rotXDeg = Math.round((world.rotation?.[0] ?? Math.PI) * 180 / Math.PI);
       const rotYDeg = Math.round((world.rotation?.[1] ?? 0) * 180 / Math.PI);
       const rotZDeg = Math.round((world.rotation?.[2] ?? 0) * 180 / Math.PI);
-      
+
       propRotX.value = String(rotXDeg);
       labelRotX.textContent = `${rotXDeg}°`;
-      
+
       propRotY.value = String(rotYDeg);
       labelRotY.textContent = `${rotYDeg}°`;
-      
+
       propRotZ.value = String(rotZDeg);
       labelRotZ.textContent = `${rotZDeg}°`;
-      
+
       propPosX.value = String(world.position?.[0] ?? 0);
       propPosY.value = String(world.position?.[1] ?? -2.2);
       propPosZ.value = String(world.position?.[2] ?? -12);
-      
+
       propSpawnX.value = String(world.spawn[0]);
       propSpawnY.value = String(world.spawn[1]);
       propSpawnZ.value = String(world.spawn[2]);
@@ -1757,7 +1758,7 @@ function onWorldSelectChanged(id: string) {
       customWorldProperties.classList.add("hidden-section-ui");
       orientFallbackMsg.classList.remove("hidden-section-ui");
     }
-    
+
     if (phase === "playing" && !isTransitioning) {
       void activateWorldById(id);
     }
@@ -1780,20 +1781,20 @@ savePropertiesBtn.addEventListener("click", async () => {
     customWorld.name = propName.value;
     customWorld.colliderUrl = propCollider.value;
     customWorld.scale = parseFloat(propScale.value) || 4;
-    
+
     // Save rotation in radians
     const rotX = (parseFloat(propRotX.value) || 0) * Math.PI / 180;
     const rotY = (parseFloat(propRotY.value) || 0) * Math.PI / 180;
     const rotZ = (parseFloat(propRotZ.value) || 0) * Math.PI / 180;
     customWorld.rotation = [rotX, rotY, rotZ];
-    
+
     // Save position offsets
     customWorld.position = [
       parseFloat(propPosX.value) || 0,
       parseFloat(propPosY.value) || -2.2,
       parseFloat(propPosZ.value) || -12
     ];
-    
+
     customWorld.spawn = [
       parseFloat(propSpawnX.value) || 0,
       parseFloat(propSpawnY.value) || 1.2,
@@ -1812,15 +1813,15 @@ savePropertiesBtn.addEventListener("click", async () => {
         parseFloat(propMaxZ.value) || 30
       ]
     };
-    
+
     await saveCustomWorld(customWorld);
     await loadWorldsList();
     populateWorldDropdown();
-    
+
     if (phase === "playing" && !isTransitioning) {
       void activateWorldById(id);
     }
-    
+
     uploadStatus.textContent = "Settings updated & loaded!";
     uploadStatus.style.color = "#4caf50";
     setTimeout(() => { uploadStatus.textContent = ""; }, 3000);
@@ -1833,12 +1834,12 @@ deleteWorldBtn.addEventListener("click", async () => {
   if (customIndex !== -1 && confirm("Are you sure you want to delete this custom world?")) {
     await deleteCustomWorld(id);
     await loadWorldsList();
-    
+
     activeWorldId = "world-one";
     localStorage.setItem("activeWorldId", "world-one");
     populateWorldDropdown();
     onWorldSelectChanged("world-one");
-    
+
     uploadStatus.textContent = "Custom world deleted.";
     uploadStatus.style.color = "#ff6b6b";
     setTimeout(() => { uploadStatus.textContent = ""; }, 3000);
@@ -1876,12 +1877,12 @@ async function handleFileSelect(file: File) {
   }
   uploadStatus.textContent = "Uploading splat locally...";
   uploadStatus.style.color = "#82dcff";
-  
+
   try {
     const id = "custom-" + Date.now();
     const name = file.name.replace(/\.(ply|spz)$/i, "");
     const blob = file;
-    
+
     const newWorld: CustomWorldConfig = {
       id,
       name,
@@ -1900,14 +1901,14 @@ async function handleFileSelect(file: File) {
       timestamp: Date.now(),
       fileType: ext === "spz" ? SplatFileType.SPZ : SplatFileType.PLY
     };
-    
+
     await saveCustomWorld(newWorld);
     await loadWorldsList();
     populateWorldDropdown();
-    
+
     worldSelectDropdown.value = id;
     onWorldSelectChanged(id);
-    
+
     uploadStatus.textContent = "World uploaded successfully and loaded!";
     uploadStatus.style.color = "#4caf50";
     setTimeout(() => { uploadStatus.textContent = ""; }, 3000);
@@ -1924,14 +1925,14 @@ async function setupAdminPanel() {
   populateWorldDropdown();
   portalTransitionToggle.checked = enableTransitions;
   bobbingAnimationToggle.checked = enableBobbing;
-  
+
   const controlsHUD = document.querySelector<HTMLElement>(".controls");
   if (controlsHUD) {
     controlsHUD.innerHTML = enableTransitions
       ? `<b>WASD / Arrows</b> steer &nbsp;·&nbsp; <b>Space</b> thrust &nbsp;·&nbsp; <b>Shift</b> boost<br/>Fly into the glowing portal to change worlds.`
       : `<b>WASD / Arrows</b> steer &nbsp;·&nbsp; <b>Space</b> thrust &nbsp;·&nbsp; <b>Shift</b> boost<br/>Single world mode (Portals disabled).`;
   }
-  
+
   const isCustom = customWorldsList.some(w => w.id === activeWorldId);
   if (isCustom) {
     onWorldSelectChanged(activeWorldId);
@@ -1947,7 +1948,7 @@ tabButtons.forEach(btn => {
     const tabId = btn.dataset.tab;
     tabButtons.forEach(b => b.classList.remove("active-tab"));
     btn.classList.add("active-tab");
-    
+
     tabContents.forEach(content => {
       if (content.id === tabId) {
         content.classList.remove("hidden-tab-content");
@@ -1967,7 +1968,7 @@ function updateSplatRealtime() {
     const posX = parseFloat(propPosX.value) || 0;
     const posY = parseFloat(propPosY.value) || -2.2;
     const posZ = parseFloat(propPosZ.value) || -12;
-    
+
     activeSplat.scale.setScalar(scaleVal);
     activeSplat.rotation.set(rotXRad, rotYRad, rotZRad);
     activeSplat.position.set(posX, posY, posZ);
@@ -2081,13 +2082,15 @@ type ModelDef = {
   pos: [number, number, number];
   target: number; // normalized max dimension, in world units
   sit: boolean;
+  rot?: [number, number, number];
+  scale?: number;
 };
 
 const MODEL_DEFS: ModelDef[] = [
-  { name: "dad",     label: "Dad",     url: "/assets/models/dad.glb",     pos: [-4.5, 0, -5], target: 3.4, sit: true },
-  { name: "child",   label: "Child",   url: "/assets/models/child.glb",   pos: [-2, 0, -5],   target: 2.8, sit: true },
-  { name: "cat",     label: "Cat",     url: "/assets/models/cat.glb",     pos: [2.5, 0, -4],  target: 2.2, sit: false },
-  { name: "pyramid", label: "Pyramid", url: "/assets/models/pyramid.glb", pos: [0, 0, -12],   target: 7.0, sit: false },
+  { name: "dad", label: "Dad", url: "/assets/models/dad-3-d.glb", pos: [-6.25, 0, -14.5], target: 3.4, sit: true, rot: [0, 105, 0], scale: 6.2 },
+  { name: "child", label: "Child", url: "/assets/models/child-girl-3d-model.glb", pos: [3, 0, -13.25], target: 2.8, sit: true, rot: [0, -40, 0], scale: 2.86 },
+  { name: "cat", label: "Cat", url: "/assets/models/cat.glb", pos: [2.5, 0, -4], target: 2.2, sit: false },
+  { name: "pyramid", label: "Pyramid", url: "/assets/models/pyramid.glb", pos: [3.5, 1.25, -32.5], target: 7.0, sit: false, rot: [0, -20, 0], scale: 7.142 },
 ];
 
 const sceneModels: SceneModel[] = [];
@@ -2112,6 +2115,7 @@ const modelScaleLabel = document.querySelector<HTMLSpanElement>("#model-scale-la
 const selectedModelName = document.querySelector<HTMLSpanElement>("#selected-model-name");
 const modelSelectList = document.querySelector<HTMLDivElement>("#model-select-list");
 const copyCoordsBtn = document.querySelector<HTMLButtonElement>("#copy-coords-btn");
+const saveModelTransformsBtn = document.querySelector<HTMLButtonElement>("#save-model-transforms-btn");
 const coordsReadout = document.querySelector<HTMLPreElement>("#coords-readout");
 const modelLoadStatus = document.querySelector<HTMLDivElement>("#model-load-status");
 const editHud = document.querySelector<HTMLDivElement>("#edit-hud");
@@ -2151,8 +2155,42 @@ async function loadSceneModels() {
       const holder = new THREE.Group();
       holder.name = `model-${def.name}`;
       holder.add(root);
-      holder.position.set(...def.pos);
-      holder.scale.setScalar(def.target / maxDim);
+
+      let transformLoaded = false;
+      const savedStr = localStorage.getItem("paperTrailModelTransforms");
+      if (savedStr) {
+        try {
+          const data = JSON.parse(savedStr);
+          console.log(`Loaded scene model transforms for ${def.name} from localStorage:`, data[def.name]);
+          const config = data[def.name];
+          if (config && Array.isArray(config.pos) && Array.isArray(config.rot) && typeof config.scale === "number") {
+            holder.position.set(config.pos[0], config.pos[1], config.pos[2]);
+            holder.rotation.set(config.rot[0], config.rot[1], config.rot[2]);
+            holder.scale.setScalar(config.scale);
+            transformLoaded = true;
+          }
+        } catch (e) {
+          console.error("Failed to parse saved model transforms:", e);
+        }
+      }
+
+      if (!transformLoaded) {
+        console.log(`Using default transforms for ${def.name}:`, { pos: def.pos, rot: def.rot, scale: def.scale ?? (def.target / maxDim) });
+        holder.position.set(...def.pos);
+        if (def.rot) {
+          holder.rotation.set(
+            THREE.MathUtils.degToRad(def.rot[0]),
+            THREE.MathUtils.degToRad(def.rot[1]),
+            THREE.MathUtils.degToRad(def.rot[2])
+          );
+        }
+        if (def.scale !== undefined) {
+          holder.scale.setScalar(def.scale);
+        } else {
+          holder.scale.setScalar(def.target / maxDim);
+        }
+      }
+
       scene.add(holder);
       modelHolders.add(holder);
 
@@ -2305,6 +2343,28 @@ async function copyCoords() {
   }
 }
 
+function saveModelTransforms() {
+  const data: Record<string, { pos: [number, number, number]; rot: [number, number, number]; scale: number }> = {};
+  for (const m of sceneModels) {
+    data[m.name] = {
+      pos: [m.holder.position.x, m.holder.position.y, m.holder.position.z],
+      rot: [m.holder.rotation.x, m.holder.rotation.y, m.holder.rotation.z],
+      scale: m.holder.scale.x,
+    };
+  }
+  console.log("Saving scene model transforms to localStorage:", JSON.stringify(data, null, 2));
+  localStorage.setItem("paperTrailModelTransforms", JSON.stringify(data));
+}
+
+async function saveAndApplyTransforms() {
+  saveModelTransforms();
+  if (saveModelTransformsBtn) {
+    const original = saveModelTransformsBtn.textContent;
+    saveModelTransformsBtn.textContent = "✅ Saved & Applied!";
+    setTimeout(() => { saveModelTransformsBtn.textContent = original; }, 1600);
+  }
+}
+
 // --- Free-fly camera ---
 let freeCamEnabled = false;
 const freeCam = {
@@ -2369,6 +2429,7 @@ function updateFreeCamera(delta: number) {
 // --- Wire up the Scene Objects controls ---
 freeCamToggleBtn?.addEventListener("click", () => setFreeCam(!freeCamEnabled));
 copyCoordsBtn?.addEventListener("click", () => void copyCoords());
+saveModelTransformsBtn?.addEventListener("click", () => void saveAndApplyTransforms());
 
 // Live-apply the numeric position / rotation fields to the selected model.
 for (const el of [modelPosX, modelPosY, modelPosZ, modelRotX, modelRotY, modelRotZ]) {
