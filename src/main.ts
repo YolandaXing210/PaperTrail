@@ -119,6 +119,10 @@ app.innerHTML = `
           <div class="keycap" style="width: 180px; height: 50px; font-size: 16px;">Space Bar<span>Thrust</span></div>
           <div class="keycap" style="width: 180px; height: 50px; font-size: 16px;">Shift<span>Boost</span></div>
         </div>
+        <div class="space-layout" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+          <div class="keycap" style="width: 180px; height: 50px; font-size: 16px;">Press 1<span>Reset plane</span></div>
+          <div class="keycap" style="width: 180px; height: 50px; font-size: 16px;">Press 2<span>Enable hand tracking</span></div>
+        </div>
       </div>
       <button id="start-button" class="primary-button">Start adventure</button>
     </div>
@@ -150,6 +154,13 @@ app.innerHTML = `
       <svg class="crosshair-line-svg">
         <line id="crosshair-line" x1="0" y1="0" x2="0" y2="0" />
       </svg>
+    </div>
+    <div id="win-banner" class="win-banner">
+      <div class="win-banner-inner">
+        <div class="win-banner-star">★</div>
+        <div class="win-banner-title">YOU WIN!</div>
+        <div class="win-banner-sub">All objects hit — <span id="win-banner-count">0 / 0</span></div>
+      </div>
     </div>
     <div class="hud">
       <div class="topbar">
@@ -226,6 +237,18 @@ app.innerHTML = `
               <input type="checkbox" id="hand-control-toggle" />
               <span>✋ Enable Hand Control (MediaPipe)</span>
             </label>
+          </div>
+
+          <!-- Audio Settings -->
+          <div class="admin-section" style="margin-bottom: 16px;">
+            <h3>Audio</h3>
+            <div class="form-row-slider">
+              <div class="slider-label-row">
+                <label>🎵 Background Music Volume</label>
+                <span id="label-bgm-volume">40%</span>
+              </div>
+              <input type="range" id="bgm-volume-slider" min="0" max="1" step="0.01" value="0.4" style="width: 100%;" />
+            </div>
           </div>
 
           <!-- Active World Selector -->
@@ -581,6 +604,8 @@ const adminCloseBtn = document.querySelector<HTMLButtonElement>("#admin-close-bt
 const portalTransitionToggle = document.querySelector<HTMLInputElement>("#portal-transition-toggle")!;
 const bobbingAnimationToggle = document.querySelector<HTMLInputElement>("#bobbing-animation-toggle")!;
 const handControlToggle = document.querySelector<HTMLInputElement>("#hand-control-toggle")!;
+const bgmVolumeSlider = document.querySelector<HTMLInputElement>("#bgm-volume-slider")!;
+const bgmVolumeLabel = document.querySelector<HTMLSpanElement>("#label-bgm-volume")!;
 const webcamContainer = document.querySelector<HTMLDivElement>("#webcam-container")!;
 const webcamVideo = document.querySelector<HTMLVideoElement>("#webcam-video")!;
 const webcamCanvas = document.querySelector<HTMLCanvasElement>("#webcam-canvas")!;
@@ -649,6 +674,16 @@ const labelColScale = document.querySelector<HTMLSpanElement>("#label-col-scale"
 const gameUi = document.querySelector<HTMLDivElement>("#game-ui")!;
 const captionPlayer = new CaptionPlayer(document.querySelector<HTMLElement>("#caption-view")!);
 let captionsStarted = false;
+
+// Looping background music for the world, started once the flight begins (after
+// the intro video). Kept well below the Dad/Uti voiceover level so narration
+// stays clearly on top.
+const BGM_DEFAULT_VOLUME = 0.4;
+const bgMusic = new Audio("/assets/music/BGM.mp3");
+bgMusic.loop = true;
+bgMusic.preload = "auto";
+const savedBgmVolume = parseFloat(localStorage.getItem("paperTrailBgmVolume") ?? "");
+bgMusic.volume = Number.isFinite(savedBgmVolume) ? savedBgmVolume : BGM_DEFAULT_VOLUME;
 // World-name card was removed from the HUD; keep these null-safe in case it returns.
 const worldName = document.querySelector<HTMLElement>("#world-name");
 const worldSubtitle = document.querySelector<HTMLElement>("#world-subtitle");
@@ -1596,9 +1631,13 @@ async function startAdventure() {
 
   // Roll the Dad/Uti story captions along the bottom of the screen, once, as
   // the flight begins. Voiced lines sync to their audio; the rest read at pace.
+  // Fade in the looping background music alongside them, quieter than the voiceover.
   if (!captionsStarted) {
     captionsStarted = true;
     void captionPlayer.play(CAPTION_SCRIPT);
+    bgMusic.currentTime = 0;
+    const bgmStart = bgMusic.play();
+    if (bgmStart) bgmStart.catch((err) => console.warn("Background music blocked/failed:", err));
   }
 
   // Populate the world with the placed GLB models (dad, child, cat, pyramid).
@@ -2206,6 +2245,18 @@ bobbingAnimationToggle.addEventListener("change", () => {
   localStorage.setItem("enableBobbing", String(enableBobbing));
 });
 
+// Live-adjust the looping background music volume from the admin slider.
+function applyBgmVolume(vol: number) {
+  const v = Math.min(1, Math.max(0, vol));
+  bgMusic.volume = v;
+  localStorage.setItem("paperTrailBgmVolume", String(v));
+  if (bgmVolumeLabel) bgmVolumeLabel.textContent = `${Math.round(v * 100)}%`;
+}
+
+bgmVolumeSlider.addEventListener("input", () => {
+  applyBgmVolume(parseFloat(bgmVolumeSlider.value));
+});
+
 handControlToggle.addEventListener("change", () => {
   void setHandControl(handControlToggle.checked);
 });
@@ -2449,6 +2500,10 @@ async function setupAdminPanel() {
   populateWorldDropdown();
   portalTransitionToggle.checked = enableTransitions;
   bobbingAnimationToggle.checked = enableBobbing;
+
+  // Reflect the saved (or default) BGM volume in the admin slider + label.
+  bgmVolumeSlider.value = String(bgMusic.volume);
+  bgmVolumeLabel.textContent = `${Math.round(bgMusic.volume * 100)}%`;
   
   const savedHandControl = localStorage.getItem("paperTrailHandControl") === "true";
   void setHandControl(savedHandControl);
@@ -2739,7 +2794,7 @@ type ModelDef = {
 const MODEL_DEFS: ModelDef[] = [
   { name: "dad", label: "Dad", url: "/assets/models/dad-3-d.glb", pos: [-4.25, 1, -4], target: 3.4, sit: true, rot: [0, 80, 0], scale: 7.9 },
   { name: "child", label: "Child", url: "/assets/models/child-girl-3d-model.glb", pos: [-0.75, 1.5, -8], target: 2.8, sit: true, rot: [0, 0, 0], scale: 5 },
-  { name: "cat", label: "Cat", url: "/assets/models/cat-walking-model.glb", pos: [5.75, 2, -10], target: 2.2, sit: false, rot: [0, 0, 0], scale: 4.45, collidable: true },
+  { name: "cat", label: "Cat", url: "/assets/models/cat-walking-model.glb", pos: [5.75, 1, -10], target: 2.2, sit: false, rot: [0, 0, 0], scale: 4.45, collidable: true },
   { name: "pyramid", label: "Pyramid", url: "/assets/models/pyramid-optimized.glb", pos: [5.25, 9.75, -38.5], target: 7.0, sit: false, rot: [0, -100, 0], scale: 20, collidable: true },
   { name: "vase", label: "Ancient Vase", url: "/assets/models/ancientvase-optimized.glb", pos: [-10.25, 2.5, -12], target: 2.0, sit: false, rot: [0, 0, 0], scale: 2.25, collidable: true },
 ];
@@ -2755,6 +2810,10 @@ let gameWon = false;
 const objList = document.querySelector<HTMLUListElement>("#obj-list");
 const objCount = document.querySelector<HTMLSpanElement>("#obj-count");
 const objectivesPanel = document.querySelector<HTMLDivElement>("#objectives");
+const winBanner = document.querySelector<HTMLDivElement>("#win-banner");
+const winBannerCount = document.querySelector<HTMLSpanElement>("#win-banner-count");
+// Timer handle so a reset (or a re-win) can cancel the pending auto-hide.
+let winBannerTimer: number | null = null;
 
 // Rebuild the HUD checklist from the collidable defs, reflecting current scored state.
 function buildObjectivesHud() {
@@ -2793,18 +2852,17 @@ function markObjectHit(name: string) {
   }
 }
 
-// Celebrate a full clear: flash the controls strip and lock a persistent won state.
+// Celebrate a full clear: big centered banner and a persistent won state.
 function triggerWin() {
   gameWon = true;
   objectivesPanel?.classList.add("won");
-  const controlsHUD = document.querySelector<HTMLElement>(".controls");
-  if (controlsHUD && !controlsHUD.dataset.winFlashing) {
-    controlsHUD.dataset.winFlashing = "1";
-    const originalHTML = controlsHUD.innerHTML;
-    controlsHUD.innerHTML = `<span style="color:#7CFC7A;font-weight:bold;font-size:15px;text-shadow:0 0 12px #7CFC7A;">★ ALL OBJECTS HIT — YOU WIN!  ${COLLIDABLE_TOTAL}/${COLLIDABLE_TOTAL} ★</span>`;
-    setTimeout(() => {
-      controlsHUD.innerHTML = originalHTML;
-      delete controlsHUD.dataset.winFlashing;
+  if (winBanner) {
+    if (winBannerCount) winBannerCount.textContent = `${COLLIDABLE_TOTAL} / ${COLLIDABLE_TOTAL}`;
+    winBanner.classList.add("show");
+    if (winBannerTimer !== null) clearTimeout(winBannerTimer);
+    winBannerTimer = window.setTimeout(() => {
+      winBanner.classList.remove("show");
+      winBannerTimer = null;
     }, 5000);
   }
   playCollectChime();
@@ -2815,6 +2873,11 @@ function resetObjectScoring() {
   scoredObjects.clear();
   gameWon = false;
   objectivesPanel?.classList.remove("won");
+  if (winBannerTimer !== null) {
+    clearTimeout(winBannerTimer);
+    winBannerTimer = null;
+  }
+  winBanner?.classList.remove("show");
   buildObjectivesHud();
 }
 
