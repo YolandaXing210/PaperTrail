@@ -72,6 +72,70 @@ button {
   filter: blur(40px);
 }
 
+/* Drifting golden desert cloud wisps behind the intro copy */
+.intro-clouds {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.cloud-layer {
+  position: absolute;
+  top: -6%;
+  left: 0;
+  width: 200%;
+  height: 112%;
+  background-repeat: repeat-x;
+  will-change: transform;
+}
+
+.cloud-layer-1 {
+  opacity: 0.62;
+  filter: blur(20px);
+  background-image:
+    radial-gradient(closest-side, rgba(255, 216, 117, 0.36), transparent 72%),
+    radial-gradient(closest-side, rgba(230, 184, 60, 0.30), transparent 74%),
+    radial-gradient(closest-side, rgba(212, 175, 55, 0.28), transparent 72%);
+  background-size: 50% 44%, 50% 38%, 50% 52%;
+  background-position: 8% 26%, 30% 64%, 46% 20%;
+  animation: cloudDrift 60s linear infinite;
+}
+
+.cloud-layer-2 {
+  opacity: 0.50;
+  filter: blur(32px);
+  background-image:
+    radial-gradient(closest-side, rgba(230, 184, 60, 0.32), transparent 72%),
+    radial-gradient(closest-side, rgba(255, 216, 117, 0.26), transparent 74%),
+    radial-gradient(closest-side, rgba(212, 175, 55, 0.30), transparent 72%);
+  background-size: 50% 56%, 50% 42%, 50% 48%;
+  background-position: 18% 54%, 40% 18%, 68% 72%;
+  animation: cloudDriftReverse 84s linear infinite;
+}
+
+.cloud-layer-3 {
+  opacity: 0.36;
+  filter: blur(42px);
+  background-image:
+    radial-gradient(closest-side, rgba(255, 216, 117, 0.18), transparent 74%),
+    radial-gradient(closest-side, rgba(230, 184, 60, 0.16), transparent 74%);
+  background-size: 50% 64%, 50% 50%;
+  background-position: 26% 40%, 60% 60%;
+  animation: cloudDrift 110s linear infinite;
+}
+
+@keyframes cloudDrift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+@keyframes cloudDriftReverse {
+  from { transform: translate3d(-50%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+
 .intro-copy {
   position: relative;
   z-index: 3;
@@ -106,6 +170,51 @@ h1 {
   color: #ffd875;
   text-shadow: 0 0 20px rgba(212, 175, 55, 0.25);
   letter-spacing: 0.02em;
+  /* Stepped down so "Memories in Flight" is the dominant eye-catcher */
+  font-size: clamp(28px, 3.9vw, 56px);
+  line-height: 1.02;
+  opacity: 0.92;
+}
+
+/* Eye-catching hero tagline above the headline */
+.intro-tagline {
+  font-family: 'Cinzel Decorative', 'Cinzel', serif;
+  font-weight: 700;
+  font-size: clamp(48px, 7.6vw, 112px);
+  line-height: 0.98;
+  letter-spacing: 0.015em;
+  margin: 0 0 10px;
+  background: linear-gradient(180deg, #fff4cc 0%, #ffd875 44%, #e6b83c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: taglineGlow 4.4s ease-in-out infinite, taglineFloat 6.5s ease-in-out infinite;
+}
+
+@keyframes taglineGlow {
+  0%, 100% {
+    text-shadow:
+      0 0 24px rgba(230, 184, 60, 0.35),
+      0 0 52px rgba(212, 175, 55, 0.16);
+  }
+  50% {
+    text-shadow:
+      0 0 40px rgba(255, 216, 117, 0.6),
+      0 0 84px rgba(230, 184, 60, 0.34);
+  }
+}
+
+@keyframes taglineFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud-layer,
+  .intro-tagline {
+    animation: none !important;
+  }
 }
 
 .intro-copy p {
@@ -419,6 +528,70 @@ h1 {
   font-size: 12px;
 }
 
+.objectives {
+  min-width: 220px;
+  padding: 12px 15px;
+  border-radius: 16px;
+  text-align: left;
+  background: rgba(5, 14, 27, .62);
+  border: 1px solid rgba(255, 255, 255, .14);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .24);
+  backdrop-filter: blur(15px);
+}
+
+.objectives-head {
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: rgba(255, 255, 255, .85);
+  margin-bottom: 8px;
+}
+
+.objectives-head #obj-count {
+  color: #ffd76a;
+}
+
+.objectives.won .objectives-head {
+  color: #7CFC7A;
+  text-shadow: 0 0 12px rgba(124, 252, 122, .6);
+}
+
+.objectives ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.objectives li {
+  font-size: 13px;
+  color: rgba(255, 255, 255, .55);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color .25s ease;
+}
+
+.objectives li .obj-check {
+  width: 16px;
+  text-align: center;
+  font-size: 14px;
+  color: rgba(255, 255, 255, .3);
+  transition: color .25s ease;
+}
+
+.objectives li.hit {
+  color: #fff;
+}
+
+.objectives li.hit .obj-check {
+  color: #7CFC7A;
+  text-shadow: 0 0 10px rgba(124, 252, 122, .7);
+}
+
 .bottom {
   display: flex;
   align-items: flex-end;
@@ -600,6 +773,16 @@ h1 {
     margin-bottom: 54px
   }
 
+  .intro-tagline {
+    font-size: clamp(38px, 12vw, 66px);
+  }
+
+  /* Push the poster behind the hero copy so the tagline stays legible */
+  .intro-flyer {
+    opacity: 0.2;
+    z-index: 1;
+  }
+
   .briefing-grid {
     grid-template-columns: 1fr
   }
@@ -719,8 +902,8 @@ h1 {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 440px;
-  max-width: 90vw;
+  width: 540px;
+  max-width: 92vw;
   z-index: 40;
   background: rgba(10, 24, 44, 0.78);
   backdrop-filter: blur(14px);

@@ -1,6 +1,7 @@
 import "./style.css";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { SparkRenderer, SplatMesh, SplatFileType } from "@sparkjsdev/spark";
 import { WORLDS, type WorldConfig } from "./worlds";
 import { CAPTION_SCRIPT, CaptionPlayer } from "./captions";
@@ -84,12 +85,18 @@ app.innerHTML = `
       <button class="admin-btn">⚙️ Admin</button>
     </div>
     <div class="intro-glow"></div>
+    <div class="intro-clouds" aria-hidden="true">
+      <span class="cloud-layer cloud-layer-1"></span>
+      <span class="cloud-layer cloud-layer-2"></span>
+      <span class="cloud-layer cloud-layer-3"></span>
+    </div>
     <div class="intro-flyer" aria-hidden="true">
       <div class="flyer-border-glow"></div>
       <img src="/assets/ui/egyptian_flyer.jpg" class="flyer-img" alt="Fly like a Pharaoh Control Briefing" />
     </div>
     <div class="intro-copy">
       <div class="eyebrow">A Gaussian Splat Flight Adventure</div>
+      <div class="intro-tagline">Memories in Flight</div>
       <h1>Fly Like a Pharaoh.</h1>
       <p>Control the airplane using only your hands. Pilot your flight through historic and cultural worlds reconstructed as immersive Gaussian splats.</p>
       <button id="continue-button" class="primary-button">Continue</button>
@@ -154,19 +161,18 @@ app.innerHTML = `
     </div>
     <div class="hud">
       <div class="topbar">
-        <div style="display: flex; gap: 12px; align-items: center;">
-          <div class="brand">Splatwing</div>
-          <button id="admin-toggle-btn" class="admin-btn">⚙️ Admin</button>
-        </div>
-        <div class="world-card">
-          <strong id="world-name">World</strong>
-          <span id="world-subtitle">Loading...</span>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-end; margin-left: auto;">
+          <div id="objectives" class="objectives">
+            <div class="objectives-head">Objects hit <span id="obj-count">0 / 0</span></div>
+            <ul id="obj-list"></ul>
+          </div>
         </div>
       </div>
       <div class="bottom">
         <div class="controls">
           <b>WASD / Arrows</b> steer &nbsp;·&nbsp; <b>Space</b> thrust &nbsp;·&nbsp; <b>Shift</b> boost<br/>
-          Fly into the glowing portal to change worlds.
+          Fly into the glowing portal to change worlds.<br/>
+          <b>Press 1</b> to reset view &nbsp;·&nbsp; <b>Press 2</b> to toggle hand-pose tracking
         </div>
         <div class="status">
           <small>Airspeed</small>
@@ -207,6 +213,7 @@ app.innerHTML = `
         <button class="tab-btn active-tab" data-tab="tab-upload">Upload & Worlds</button>
         <button class="tab-btn" data-tab="tab-orient" id="tab-btn-orient">Splat Orientation</button>
         <button class="tab-btn" data-tab="tab-objects" id="tab-btn-objects">Scene Objects</button>
+        <button class="tab-btn" data-tab="tab-collider" id="tab-btn-collider">Poly</button>
       </div>
       
       <div class="admin-body">
@@ -419,6 +426,75 @@ app.innerHTML = `
           </div>
         </div>
 
+        <!-- Tab: Collider (align the wireframe mesh collider to the world splat) -->
+        <div id="tab-collider" class="tab-content hidden-tab-content">
+          <div class="admin-section">
+            <h3>Poly Transform <span class="selected-model-name">splat + collider</span></h3>
+            <p style="color: rgba(255,255,255,0.6); font-size: 12px; margin: 0 0 14px;">
+              Moves the world splat and its mesh collider together — the collider stays in sync.
+              Copy the values into the world's config in <code>worlds.ts</code>.
+            </p>
+
+            <div class="form-row">
+              <label>Collider Wireframe</label>
+              <button id="collider-visible-btn" class="admin-btn" style="width: 100%; height: 40px; border-radius: 999px;">👁 Visible</button>
+            </div>
+
+            <div class="form-section-title">Position</div>
+            <div class="form-grid">
+              <div>
+                <label>Position X</label>
+                <input type="number" id="prop-col-pos-x" step="0.1" />
+              </div>
+              <div>
+                <label>Position Y</label>
+                <input type="number" id="prop-col-pos-y" step="0.1" />
+              </div>
+              <div>
+                <label>Position Z</label>
+                <input type="number" id="prop-col-pos-z" step="0.1" />
+              </div>
+            </div>
+
+            <div class="form-section-title">Rotation (Degrees)</div>
+            <div class="form-row-slider">
+              <div class="slider-label-row">
+                <label>Pitch (Rotation X)</label>
+                <span id="label-col-rot-x">0°</span>
+              </div>
+              <input type="range" id="prop-col-rot-x" min="-180" max="180" step="1" />
+            </div>
+            <div class="form-row-slider">
+              <div class="slider-label-row">
+                <label>Yaw (Rotation Y)</label>
+                <span id="label-col-rot-y">0°</span>
+              </div>
+              <input type="range" id="prop-col-rot-y" min="-180" max="180" step="1" />
+            </div>
+            <div class="form-row-slider">
+              <div class="slider-label-row">
+                <label>Roll (Rotation Z)</label>
+                <span id="label-col-rot-z">0°</span>
+              </div>
+              <input type="range" id="prop-col-rot-z" min="-180" max="180" step="1" />
+            </div>
+
+            <div class="form-row-slider" style="margin-top: 12px;">
+              <div class="slider-label-row">
+                <label>Scale</label>
+                <span id="label-col-scale">1.0</span>
+              </div>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="range" id="prop-col-scale-slider" min="0.1" max="20" step="0.1" style="flex: 1;" />
+                <input type="number" id="prop-col-scale" step="0.1" style="width: 70px;" />
+              </div>
+            </div>
+
+            <button id="collider-copy-btn" class="admin-btn" style="margin-top: 16px; width: 100%; height: 44px; display: block; border-radius: 999px;">Copy poly transform for world config</button>
+            <div id="collider-copy-status" style="color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 8px; text-align: center; min-height: 16px;"></div>
+          </div>
+        </div>
+
         <!-- Tab 3: Scene Objects (GLB models, free camera, transform gizmo) -->
         <div id="tab-objects" class="tab-content hidden-tab-content">
           <div class="admin-section" style="margin-bottom: 16px;">
@@ -561,11 +637,29 @@ const propMaxY = document.querySelector<HTMLInputElement>("#prop-max-y")!;
 const propMaxZ = document.querySelector<HTMLInputElement>("#prop-max-z")!;
 const savePropertiesBtn = document.querySelector<HTMLButtonElement>("#save-properties-btn")!;
 const deleteWorldBtn = document.querySelector<HTMLButtonElement>("#delete-world-btn")!;
+
+// Collider tab: independent transform editor + visibility toggle for the mesh collider.
+const colliderVisibleBtn = document.querySelector<HTMLButtonElement>("#collider-visible-btn")!;
+const colliderCopyBtn = document.querySelector<HTMLButtonElement>("#collider-copy-btn")!;
+const colliderCopyStatus = document.querySelector<HTMLDivElement>("#collider-copy-status")!;
+const propColPosX = document.querySelector<HTMLInputElement>("#prop-col-pos-x")!;
+const propColPosY = document.querySelector<HTMLInputElement>("#prop-col-pos-y")!;
+const propColPosZ = document.querySelector<HTMLInputElement>("#prop-col-pos-z")!;
+const propColRotX = document.querySelector<HTMLInputElement>("#prop-col-rot-x")!;
+const propColRotY = document.querySelector<HTMLInputElement>("#prop-col-rot-y")!;
+const propColRotZ = document.querySelector<HTMLInputElement>("#prop-col-rot-z")!;
+const labelColRotX = document.querySelector<HTMLSpanElement>("#label-col-rot-x")!;
+const labelColRotY = document.querySelector<HTMLSpanElement>("#label-col-rot-y")!;
+const labelColRotZ = document.querySelector<HTMLSpanElement>("#label-col-rot-z")!;
+const propColScale = document.querySelector<HTMLInputElement>("#prop-col-scale")!;
+const propColScaleSlider = document.querySelector<HTMLInputElement>("#prop-col-scale-slider")!;
+const labelColScale = document.querySelector<HTMLSpanElement>("#label-col-scale")!;
 const gameUi = document.querySelector<HTMLDivElement>("#game-ui")!;
 const captionPlayer = new CaptionPlayer(document.querySelector<HTMLElement>("#caption-view")!);
 let captionsStarted = false;
-const worldName = document.querySelector<HTMLElement>("#world-name")!;
-const worldSubtitle = document.querySelector<HTMLElement>("#world-subtitle")!;
+// World-name card was removed from the HUD; keep these null-safe in case it returns.
+const worldName = document.querySelector<HTMLElement>("#world-name");
+const worldSubtitle = document.querySelector<HTMLElement>("#world-subtitle");
 const speedLabel = document.querySelector<HTMLElement>("#speed")!;
 const preloadStatus = document.querySelector<HTMLElement>("#preload-status")!;
 
@@ -709,9 +803,9 @@ new GLTFLoader().load(
 
     const pivot = new THREE.Group();
     pivot.add(model);
-    // Normalize footprint to match the previous airplane (~3.2 units across).
+    // Normalize footprint to ~1.6 units across (half the previous ~3.2 size).
     const maxDim = Math.max(size.x, size.y, size.z) || 1;
-    pivot.scale.setScalar(3.2 / maxDim);
+    pivot.scale.setScalar(1.6 / maxDim);
     // Model is authored nose->+X, wings along Z. Flight-forward is -Z with wings
     // along X, so rotate +90deg about Y (nose +X -> -Z, wings +Z -> +X).
     pivot.rotation.y = Math.PI / 2;
@@ -722,6 +816,12 @@ new GLTFLoader().load(
   undefined,
   (err) => console.error("Failed to load paper_plane.glb", err)
 );
+
+// The legacy world-portal and the +500 "target orb" are hidden and inert in the
+// hit-all-props game mode. Flip either flag to true to bring it back (restores
+// both its visibility and its proximity trigger).
+const SHOW_PORTAL = false;
+const SHOW_TARGET_OBJECT = false;
 
 const portalGroup = new THREE.Group();
 const portalRing = new THREE.Mesh(
@@ -1235,6 +1335,9 @@ let worldOneLoadProgress = 0;
 let worldOnePreloadedId: string | null = null;
 let isTransitioning = false;
 let activeColliderMesh: THREE.Group | null = null;
+// Whether the yellow wireframe collider is shown while the admin panel is open.
+// Toggled by the Collider debug tab; the collider stays active for collisions either way.
+let colliderVisible = true;
 const colliderGroup = new THREE.Group();
 scene.add(colliderGroup);
 
@@ -1242,16 +1345,21 @@ const colliderMaterial = new THREE.MeshBasicMaterial({
   color: 0xffff00,
   wireframe: true,
   transparent: true,
-  opacity: 0.45
+  opacity: 0.45,
+  // The world collider is a hollow shell viewed from the inside, so raycasts must
+  // register the back (interior) faces of the walls — otherwise nothing collides.
+  side: THREE.DoubleSide
 });
+// Reused every frame for plane-vs-world collision raycasts.
+const colliderRaycaster = new THREE.Raycaster();
 const velocity = new THREE.Vector3();
 const desiredVelocity = new THREE.Vector3();
 const cameraTarget = new THREE.Vector3();
 const clock = new THREE.Clock();
 
 function setHud(world: WorldConfig) {
-  worldName.textContent = world.name;
-  worldSubtitle.textContent = world.subtitle;
+  if (worldName) worldName.textContent = world.name;
+  if (worldSubtitle) worldSubtitle.textContent = world.subtitle;
 }
 
 function configureSplat(splat: SplatMesh, world: WorldConfig) {
@@ -1375,18 +1483,23 @@ function loadCollider(url: string) {
       activeColliderMesh = model;
       colliderGroup.add(model);
 
-      // Match splat scale, rotation, and position
+      // Position the collider. Uses the world's collider-specific transform when
+      // provided, otherwise falls back to matching the splat's transform.
       const world = getCurrentWorldConfig(activeWorldId);
       if (world) {
-        colliderGroup.position.set(...world.position);
-        colliderGroup.rotation.set(...world.rotation);
-        colliderGroup.scale.setScalar(world.scale);
+        const cPos = world.colliderPosition ?? world.position;
+        const cRot = world.colliderRotation ?? world.rotation;
+        const cScale = world.colliderScale ?? world.scale;
+        colliderGroup.position.set(...cPos);
+        colliderGroup.rotation.set(...cRot);
+        colliderGroup.scale.setScalar(cScale);
+        syncColliderInputs(cPos, cRot, cScale);
       }
 
-      // Update material visibility based on admin panel open state
+      // Update material visibility based on admin panel open state + toggle.
       const adminPanel = document.querySelector("#admin-panel");
       const isAdminPanelOpen = adminPanel && !adminPanel.classList.contains("hidden-panel");
-      colliderMaterial.visible = !!isAdminPanelOpen;
+      colliderMaterial.visible = !!isAdminPanelOpen && colliderVisible;
 
       console.log("Mesh collider loaded successfully!");
     },
@@ -1461,7 +1574,7 @@ async function startAdventure() {
   plane.position.set(...world.spawn);
   plane.visible = true;
   portalGroup.position.set(...world.portal);
-  portalGroup.visible = enableTransitions;
+  portalGroup.visible = enableTransitions && SHOW_PORTAL;
   planeYaw = world.spawnRotation ?? Math.PI;
   planePitch = 0;
   plane.quaternion.setFromEuler(new THREE.Euler(0, planeYaw, 0));
@@ -1475,7 +1588,7 @@ async function startAdventure() {
   if (world.objectPos) {
     objectTargetGroup.position.set(...world.objectPos);
     objectTargetGroup.scale.setScalar(world.objectScale ?? 1.0);
-    objectTargetGroup.visible = true;
+    objectTargetGroup.visible = SHOW_TARGET_OBJECT;
   } else {
     objectTargetGroup.visible = false;
   }
@@ -1493,6 +1606,9 @@ async function startAdventure() {
 
   // Populate the world with the placed GLB models (dad, child, cat, pyramid).
   void loadSceneModels();
+
+  // Fresh scoring + HUD checklist for this run.
+  resetObjectScoring();
 
   if (enableTransitions && activeWorldId === "world-one") {
     void preloadSecondWorld();
@@ -1546,16 +1662,17 @@ async function activateWorldById(id: string) {
   const startForward = new THREE.Vector3(0, 0, -1).applyQuaternion(plane.quaternion);
   velocity.copy(startForward).multiplyScalar(3);
   portalGroup.position.set(...world.portal);
-  portalGroup.visible = enableTransitions;
+  portalGroup.visible = enableTransitions && SHOW_PORTAL;
   setHud(world);
   camera.position.copy(plane.position).add(new THREE.Vector3(0, 4.8, 10));
   camera.lookAt(plane.position);
 
   isTargetCollected = false;
+  resetObjectScoring();
   if (world.objectPos) {
     objectTargetGroup.position.set(...world.objectPos);
     objectTargetGroup.scale.setScalar(world.objectScale ?? 1.0);
-    objectTargetGroup.visible = true;
+    objectTargetGroup.visible = SHOW_TARGET_OBJECT;
   } else {
     objectTargetGroup.visible = false;
   }
@@ -1684,37 +1801,89 @@ function updatePlane(delta: number) {
 
   plane.position.addScaledVector(velocity, delta);
 
-  // Mesh collider collision detection and response
-  if (activeColliderMesh) {
-    const raycaster = new THREE.Raycaster();
+  // Mesh-collider collision: stop the plane from flying through the world mesh.
+  // Raycast in the direction of travel; on a hit within the plane's radius, snap
+  // the plane back to the surface and bounce it off the wall (same reflect + damping
+  // response as the solid prop colliders below) instead of tunnelling through.
+  if (activeColliderMesh && velocity.lengthSq() > 1e-8) {
+    const planeRadius = 0.9;
+    const dir = velocity.clone().normalize();
     const moveDist = velocity.length() * delta;
-    const direction = velocity.clone().normalize();
-    // Start raycast slightly behind the plane to prevent passing through thin walls
-    const rayOrigin = plane.position.clone().addScaledVector(direction, -0.5);
-    raycaster.set(rayOrigin, direction);
 
-    // Find all intersections within the movement distance + size radius of the plane
-    const intersects = raycaster.intersectObjects(colliderGroup.children, true);
-    const planeRadius = 0.8; // Safe bounding radius for the plane model
+    // Start slightly behind the plane so a thin wall can't be skipped in one step.
+    colliderRaycaster.set(plane.position.clone().addScaledVector(dir, -planeRadius), dir);
+    colliderRaycaster.far = moveDist + planeRadius * 2;
 
-    if (intersects.length > 0 && intersects[0].distance < Math.max(moveDist, 0.1) + planeRadius + 0.5) {
-      const hit = intersects[0];
+    const hits = colliderRaycaster.intersectObject(activeColliderMesh, true);
+    if (hits.length > 0) {
+      const hit = hits[0];
 
-      // Compute correct normal transformed by the object's parent transforms
-      const normal = hit.face ? hit.face.normal.clone() : new THREE.Vector3(0, 1, 0);
-      normal.applyQuaternion(hit.object.quaternion);
+      // World-space surface normal, flipped so it faces the incoming plane.
+      const normal = hit.face
+        ? hit.face.normal.clone()
+            .applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld))
+            .normalize()
+        : dir.clone().negate();
+      if (normal.dot(dir) > 0) normal.negate();
 
-      // Bounce/Push-back response:
-      // 1. Position plane just outside the collision point along the normal
-      plane.position.copy(hit.point).addScaledVector(normal, planeRadius + 0.1);
+      // Snap the plane back to just outside the surface.
+      plane.position.copy(hit.point).addScaledVector(normal, planeRadius);
 
-      // 2. Reflect velocity vector off the collision surface with damping
-      velocity.reflect(normal).multiplyScalar(0.25);
+      // Bounce off the wall with damping — matches the solid prop colliders below.
+      if (velocity.dot(normal) < 0) {
+        velocity.reflect(normal).multiplyScalar(0.3);
+        planeYaw = Math.atan2(-velocity.z, velocity.x);
+        planePitch = Math.asin(THREE.MathUtils.clamp(velocity.y / (velocity.length() || 1), -0.9, 0.9));
+      }
+    }
+  }
 
-      // 3. Re-align the visual yaw/pitch orientation of the plane with the new velocity
+  // Solid prop collisions: the plane bounces off each collidable model (feels its
+  // mass) on every contact; the first contact with each prop scores a point.
+  const planeRadius = 0.8;
+  for (const model of sceneModels) {
+    if (!model.collidable || !model.localBox) continue;
+
+    // Fresh world AABB for this frame (tracks any gizmo/localStorage placement).
+    model.holder.updateWorldMatrix(true, false);
+    const worldBox = model.localBox.clone().applyMatrix4(model.holder.matrixWorld);
+
+    const closest = worldBox.clampPoint(plane.position, new THREE.Vector3());
+    const dist = plane.position.distanceTo(closest);
+    if (dist >= planeRadius) continue;
+
+    let normal: THREE.Vector3;
+    if (dist > 1e-4) {
+      // Plane is outside the box: push out along the surface normal.
+      normal = plane.position.clone().sub(closest).normalize();
+      plane.position.copy(closest).addScaledVector(normal, planeRadius);
+    } else {
+      // Plane center is inside the box (fast clip): eject along the axis of least
+      // penetration so it pops out the nearest face rather than launching far.
+      const { min, max } = worldBox;
+      const p = plane.position;
+      const faces: Array<{ n: THREE.Vector3; d: number }> = [
+        { n: new THREE.Vector3(-1, 0, 0), d: p.x - min.x },
+        { n: new THREE.Vector3(1, 0, 0), d: max.x - p.x },
+        { n: new THREE.Vector3(0, -1, 0), d: p.y - min.y },
+        { n: new THREE.Vector3(0, 1, 0), d: max.y - p.y },
+        { n: new THREE.Vector3(0, 0, -1), d: p.z - min.z },
+        { n: new THREE.Vector3(0, 0, 1), d: max.z - p.z },
+      ];
+      const face = faces.reduce((a, b) => (b.d < a.d ? b : a));
+      normal = face.n;
+      plane.position.addScaledVector(normal, face.d + planeRadius);
+    }
+
+    // Bounce with damping only when actually moving into the surface, so a plane
+    // already sliding away doesn't get flipped back into the prop.
+    if (velocity.dot(normal) < 0) {
+      velocity.reflect(normal).multiplyScalar(0.3);
       planeYaw = Math.atan2(-velocity.z, velocity.x);
       planePitch = Math.asin(THREE.MathUtils.clamp(velocity.y / (velocity.length() || 1), -0.9, 0.9));
     }
+
+    markObjectHit(model.name);
   }
 
 
@@ -1730,7 +1899,7 @@ function updatePlane(delta: number) {
   }
 
   // Camera follow offset calculations
-  const baseCamOffset = new THREE.Vector3(0, 1.8, 6.8);
+  const baseCamOffset = new THREE.Vector3(0, 1.1, 4.2);
   const orbitQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(orbitPitch, orbitYaw, 0, 'YXZ'));
   const cameraOffset = baseCamOffset.clone().applyQuaternion(orbitQuat).applyQuaternion(plane.quaternion);
   cameraTarget.copy(plane.position).add(cameraOffset);
@@ -1746,7 +1915,7 @@ function updatePlane(delta: number) {
   speedLabel.textContent = String(Math.round(velocity.length() * 21));
 
   // Portal interactions - active only if portal transitions enabled
-  if (enableTransitions) {
+  if (enableTransitions && SHOW_PORTAL) {
     const portalDistance = plane.position.distanceTo(portalGroup.position);
     portalRing.material.opacity = THREE.MathUtils.clamp(1.25 - portalDistance / 24, 0.35, 1);
     portalGroup.scale.setScalar(1 + Math.sin(performance.now() * 0.004) * 0.04);
@@ -1902,7 +2071,7 @@ renderer.setAnimationLoop(() => {
   } else {
     updatePlane(delta);
   }
-  if (enableTransitions) {
+  if (enableTransitions && SHOW_PORTAL) {
     portalRing.rotation.z += delta * 0.45;
     portalCore.rotation.z -= delta * 0.2;
   }
@@ -1918,8 +2087,7 @@ window.addEventListener("resize", () => {
 });
 
 // --- Admin Panel Functionality Bindings ---
-adminToggleBtns.forEach(btn => {
-  btn.addEventListener("click", () => {
+function toggleAdminPanel() {
     const wasHidden = adminPanel.classList.contains("hidden-panel");
     adminPanel.classList.toggle("hidden-panel");
     keys.clear();
@@ -1939,8 +2107,10 @@ adminToggleBtns.forEach(btn => {
         spawnHelper.visible = true;
       }
 
-      // Show yellow wireframe collider
-      colliderMaterial.visible = true;
+      // Show yellow wireframe collider (respecting the Poly tab toggle) and
+      // sync the poly editor inputs to the current splat/world transform.
+      colliderMaterial.visible = colliderVisible;
+      syncPolyInputsFromWorld();
     } else {
       // Just closed the admin panel (using button toggle)
       if (phase !== "playing") {
@@ -1956,7 +2126,56 @@ adminToggleBtns.forEach(btn => {
       // Hide yellow wireframe collider (but keep it active in scene for collisions)
       colliderMaterial.visible = false;
     }
-  });
+}
+
+// The in-HUD "⚙️ Admin" button was removed; the intro/onboarding openers still work,
+// and Tab now toggles the panel in-scene.
+adminToggleBtns.forEach(btn => {
+  btn.addEventListener("click", toggleAdminPanel);
+});
+
+// Press Tab to open/close the admin panel (replaces the in-HUD Admin button).
+window.addEventListener("keydown", (event) => {
+  if (event.code !== "Tab") return;
+  const tag = (event.target as HTMLElement | null)?.tagName;
+  // Let Tab do normal field navigation when typing inside the panel's controls.
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  event.preventDefault();
+  toggleAdminPanel();
+});
+
+// Reset the airplane to its spawn point (position, heading and velocity).
+function resetPlaneToSpawn() {
+  const world = getCurrentWorldConfig(activeWorldId) || WORLDS[0];
+  plane.position.set(...world.spawn);
+  planeYaw = world.spawnRotation ?? Math.PI;
+  planePitch = 0;
+  plane.quaternion.setFromEuler(new THREE.Euler(0, planeYaw, 0));
+  planeModel.rotation.z = 0; // clear any bank/roll
+  const startForward = new THREE.Vector3(0, 0, -1).applyQuaternion(plane.quaternion);
+  velocity.copy(startForward).multiplyScalar(3);
+}
+
+// Press "1" during flight to snap the airplane back to where it spawned.
+// (Ignored in free-camera edit mode, where 1-4 pick a scene model, and while
+// typing in a panel field.)
+window.addEventListener("keydown", (event) => {
+  if (event.code !== "Digit1" && event.code !== "Numpad1") return;
+  if (freeCamEnabled || phase !== "playing") return;
+  const tag = (event.target as HTMLElement | null)?.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  resetPlaneToSpawn();
+});
+
+// Press "2" to toggle hand-pose tracking (MediaPipe) on/off.
+// (Ignored in free-camera edit mode, where 1-4 pick a scene model, and while
+// typing in a panel field.)
+window.addEventListener("keydown", (event) => {
+  if (event.code !== "Digit2" && event.code !== "Numpad2") return;
+  if (freeCamEnabled) return;
+  const tag = (event.target as HTMLElement | null)?.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  void setHandControl(!handControlActive);
 });
 
 adminCloseBtn.addEventListener("click", () => {
@@ -1975,7 +2194,7 @@ adminCloseBtn.addEventListener("click", () => {
 portalTransitionToggle.addEventListener("change", () => {
   enableTransitions = portalTransitionToggle.checked;
   localStorage.setItem("enableTransitions", String(enableTransitions));
-  portalGroup.visible = enableTransitions;
+  portalGroup.visible = enableTransitions && SHOW_PORTAL;
 
   const controlsHUD = document.querySelector<HTMLElement>(".controls");
   if (controlsHUD) {
@@ -2305,8 +2524,125 @@ function updateSplatRealtime() {
   const objScale = parseFloat(propObjScale.value) || 1.0;
   objectTargetGroup.position.set(objX, objY, objZ);
   objectTargetGroup.scale.setScalar(objScale);
-  objectTargetGroup.visible = true;
+  objectTargetGroup.visible = SHOW_TARGET_OBJECT;
 }
+
+// --- Poly transform editor (Poly tab) ---
+// Same mechanism as the Scene Objects transform editor, but applied to the
+// "poly" (the world Gaussian splat). The mesh collider is treated as part of
+// the poly, so every change here moves the splat AND its collider in lockstep.
+// Values can be copied back into the world config (position/rotation/scale).
+function updateColliderVisibleBtn() {
+  colliderVisibleBtn.textContent = colliderVisible ? "👁 Visible" : "🚫 Hidden";
+  colliderVisibleBtn.style.opacity = colliderVisible ? "1" : "0.55";
+}
+
+function syncPolyInputs(pos: [number, number, number], rot: [number, number, number], scale: number) {
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  propColPosX.value = String(round2(pos[0]));
+  propColPosY.value = String(round2(pos[1]));
+  propColPosZ.value = String(round2(pos[2]));
+
+  const rxDeg = Math.round(rot[0] * 180 / Math.PI);
+  const ryDeg = Math.round(rot[1] * 180 / Math.PI);
+  const rzDeg = Math.round(rot[2] * 180 / Math.PI);
+  propColRotX.value = String(rxDeg); labelColRotX.textContent = `${rxDeg}°`;
+  propColRotY.value = String(ryDeg); labelColRotY.textContent = `${ryDeg}°`;
+  propColRotZ.value = String(rzDeg); labelColRotZ.textContent = `${rzDeg}°`;
+
+  propColScale.value = String(round2(scale));
+  propColScaleSlider.value = String(scale);
+  labelColScale.textContent = scale.toFixed(1);
+}
+
+// Populate the poly editor from the live splat when loaded, else the world config.
+function syncPolyInputsFromWorld() {
+  if (activeSplat) {
+    syncPolyInputs(
+      [activeSplat.position.x, activeSplat.position.y, activeSplat.position.z],
+      [activeSplat.rotation.x, activeSplat.rotation.y, activeSplat.rotation.z],
+      activeSplat.scale.x
+    );
+    return;
+  }
+  const world = getCurrentWorldConfig(activeWorldId);
+  if (world) {
+    syncPolyInputs(world.position, world.rotation, world.scale);
+  }
+}
+
+// Backwards-compatible alias used by loadCollider() (defined earlier in the file).
+function syncColliderInputs(pos: [number, number, number], rot: [number, number, number], scale: number) {
+  syncPolyInputs(pos, rot, scale);
+}
+
+// Drive the poly: splat + collider move together so the collider stays in sync.
+function updatePolyRealtime() {
+  const px = parseFloat(propColPosX.value) || 0;
+  const py = parseFloat(propColPosY.value) || 0;
+  const pz = parseFloat(propColPosZ.value) || 0;
+  const rx = (parseFloat(propColRotX.value) || 0) * Math.PI / 180;
+  const ry = (parseFloat(propColRotY.value) || 0) * Math.PI / 180;
+  const rz = (parseFloat(propColRotZ.value) || 0) * Math.PI / 180;
+  const s = parseFloat(propColScale.value) || 1;
+
+  if (activeSplat) {
+    activeSplat.position.set(px, py, pz);
+    activeSplat.rotation.set(rx, ry, rz);
+    activeSplat.scale.setScalar(s);
+  }
+  colliderGroup.position.set(px, py, pz);
+  colliderGroup.rotation.set(rx, ry, rz);
+  colliderGroup.scale.setScalar(s);
+}
+
+colliderVisibleBtn.addEventListener("click", () => {
+  colliderVisible = !colliderVisible;
+  colliderMaterial.visible = colliderVisible;
+  updateColliderVisibleBtn();
+});
+
+[propColPosX, propColPosY, propColPosZ].forEach((el) => el.addEventListener("input", updatePolyRealtime));
+
+propColRotX.addEventListener("input", () => { labelColRotX.textContent = `${propColRotX.value}°`; updatePolyRealtime(); });
+propColRotY.addEventListener("input", () => { labelColRotY.textContent = `${propColRotY.value}°`; updatePolyRealtime(); });
+propColRotZ.addEventListener("input", () => { labelColRotZ.textContent = `${propColRotZ.value}°`; updatePolyRealtime(); });
+
+propColScaleSlider.addEventListener("input", () => {
+  propColScale.value = propColScaleSlider.value;
+  labelColScale.textContent = parseFloat(propColScaleSlider.value).toFixed(1);
+  updatePolyRealtime();
+});
+propColScale.addEventListener("input", () => {
+  propColScaleSlider.value = propColScale.value;
+  labelColScale.textContent = (parseFloat(propColScale.value) || 1).toFixed(1);
+  updatePolyRealtime();
+});
+
+colliderCopyBtn.addEventListener("click", () => {
+  const round4 = (n: number) => Math.round(n * 10000) / 10000;
+  const px = round4(parseFloat(propColPosX.value) || 0);
+  const py = round4(parseFloat(propColPosY.value) || 0);
+  const pz = round4(parseFloat(propColPosZ.value) || 0);
+  const rx = round4((parseFloat(propColRotX.value) || 0) * Math.PI / 180);
+  const ry = round4((parseFloat(propColRotY.value) || 0) * Math.PI / 180);
+  const rz = round4((parseFloat(propColRotZ.value) || 0) * Math.PI / 180);
+  const s = round4(parseFloat(propColScale.value) || 1);
+  const snippet =
+    `position: [${px}, ${py}, ${pz}],\n` +
+    `rotation: [${rx}, ${ry}, ${rz}],\n` +
+    `scale: ${s},`;
+  console.log("Poly (splat + collider) transform for worlds.ts:\n" + snippet);
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(snippet)
+      .then(() => { colliderCopyStatus.textContent = "Copied! Paste into the world in worlds.ts"; })
+      .catch(() => { colliderCopyStatus.textContent = "Logged to console (clipboard blocked)"; });
+  } else {
+    colliderCopyStatus.textContent = "Logged to console (clipboard unavailable)";
+  }
+});
+
+updateColliderVisibleBtn();
 
 // Sync Scale input and slider
 propScaleSlider.addEventListener("input", () => {
@@ -2384,6 +2720,10 @@ type SceneModel = {
   label: string;
   holder: THREE.Group;
   mixer: THREE.AnimationMixer | null;
+  /** When true, the plane bounces off this prop and it counts toward the score. */
+  collidable: boolean;
+  /** Holder-local axis-aligned bounds of the model content, computed once at load. */
+  localBox: THREE.Box3 | null;
 };
 
 type ModelDef = {
@@ -2395,18 +2735,100 @@ type ModelDef = {
   sit: boolean;
   rot?: [number, number, number];
   scale?: number;
+  /** Props (not story characters) become solid, scorable obstacles. */
+  collidable?: boolean;
 };
 
 const MODEL_DEFS: ModelDef[] = [
-  { name: "dad", label: "Dad", url: "/assets/models/dad-3-d.glb", pos: [-6.25, 0, -14.5], target: 3.4, sit: true, rot: [0, 105, 0], scale: 6.2 },
-  { name: "child", label: "Child", url: "/assets/models/child-girl-3d-model.glb", pos: [3, 0, -13.25], target: 2.8, sit: true, rot: [0, -40, 0], scale: 2.86 },
-  { name: "cat", label: "Cat", url: "/assets/models/cat-walking-model.glb", pos: [2.5, 0, -4], target: 2.2, sit: false },
-  { name: "pyramid", label: "Pyramid", url: "/assets/models/pyramid.glb", pos: [3.5, 1.25, -32.5], target: 7.0, sit: false, rot: [0, -20, 0], scale: 7.142 },
+  { name: "dad", label: "Dad", url: "/assets/models/dad-3-d.glb", pos: [-4.25, 1, -4], target: 3.4, sit: true, rot: [0, 80, 0], scale: 7.9 },
+  { name: "child", label: "Child", url: "/assets/models/child-girl-3d-model.glb", pos: [-0.75, 1.5, -8], target: 2.8, sit: true, rot: [0, 0, 0], scale: 5 },
+  { name: "cat", label: "Cat", url: "/assets/models/cat-walking-model.glb", pos: [5.75, 2, -10], target: 2.2, sit: false, rot: [0, 0, 0], scale: 4.45, collidable: true },
+  { name: "pyramid", label: "Pyramid", url: "/assets/models/pyramid.glb", pos: [5.25, 9.75, -38.5], target: 7.0, sit: false, rot: [0, -100, 0], scale: 20, collidable: true },
+  { name: "vase", label: "Ancient Vase", url: "/assets/models/ancientvase-optimized.glb", pos: [-10.25, 2.5, -12], target: 2.0, sit: false, rot: [0, 0, 0], scale: 2.25, collidable: true },
 ];
+
+// Total number of scorable props — fixed regardless of async load order, so the
+// win check is stable even before every model has finished loading.
+const COLLIDABLE_TOTAL = MODEL_DEFS.filter((d) => d.collidable).length;
+// Names of props the plane has already scored this run (single source of truth
+// for both scoring and the HUD checklist).
+const scoredObjects = new Set<string>();
+let gameWon = false;
+
+const objList = document.querySelector<HTMLUListElement>("#obj-list");
+const objCount = document.querySelector<HTMLSpanElement>("#obj-count");
+const objectivesPanel = document.querySelector<HTMLDivElement>("#objectives");
+
+// Rebuild the HUD checklist from the collidable defs, reflecting current scored state.
+function buildObjectivesHud() {
+  if (!objList) return;
+  objList.innerHTML = "";
+  for (const def of MODEL_DEFS) {
+    if (!def.collidable) continue;
+    const li = document.createElement("li");
+    li.dataset.obj = def.name;
+    const hit = scoredObjects.has(def.name);
+    if (hit) li.classList.add("hit");
+    li.innerHTML = `<span class="obj-check">${hit ? "✓" : "○"}</span> ${def.label}`;
+    objList.appendChild(li);
+  }
+  updateObjectivesCount();
+}
+
+function updateObjectivesCount() {
+  if (objCount) objCount.textContent = `${scoredObjects.size} / ${COLLIDABLE_TOTAL}`;
+}
+
+// Score a prop on its first hit: check it off, chime, and trigger the win if it's the last.
+function markObjectHit(name: string) {
+  if (scoredObjects.has(name)) return;
+  scoredObjects.add(name);
+  const li = objList?.querySelector<HTMLLIElement>(`li[data-obj="${name}"]`);
+  if (li) {
+    li.classList.add("hit");
+    const check = li.querySelector(".obj-check");
+    if (check) check.textContent = "✓";
+  }
+  updateObjectivesCount();
+  playCollectChime();
+  if (scoredObjects.size >= COLLIDABLE_TOTAL && !gameWon) {
+    triggerWin();
+  }
+}
+
+// Celebrate a full clear: flash the controls strip and lock a persistent won state.
+function triggerWin() {
+  gameWon = true;
+  objectivesPanel?.classList.add("won");
+  const controlsHUD = document.querySelector<HTMLElement>(".controls");
+  if (controlsHUD && !controlsHUD.dataset.winFlashing) {
+    controlsHUD.dataset.winFlashing = "1";
+    const originalHTML = controlsHUD.innerHTML;
+    controlsHUD.innerHTML = `<span style="color:#7CFC7A;font-weight:bold;font-size:15px;text-shadow:0 0 12px #7CFC7A;">★ ALL OBJECTS HIT — YOU WIN!  ${COLLIDABLE_TOTAL}/${COLLIDABLE_TOTAL} ★</span>`;
+    setTimeout(() => {
+      controlsHUD.innerHTML = originalHTML;
+      delete controlsHUD.dataset.winFlashing;
+    }, 5000);
+  }
+  playCollectChime();
+}
+
+// Clear scoring + HUD for a fresh run (called on world (re)activation).
+function resetObjectScoring() {
+  scoredObjects.clear();
+  gameWon = false;
+  objectivesPanel?.classList.remove("won");
+  buildObjectivesHud();
+}
 
 const sceneModels: SceneModel[] = [];
 const modelHolders = new Set<THREE.Object3D>();
 const modelLoader = new GLTFLoader();
+// The ancient vase is Draco-compressed, so the loader needs a Draco decoder.
+// Served locally from public/draco/ (no CDN dependency); harmless for other models.
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath("/draco/");
+modelLoader.setDRACOLoader(dracoLoader);
 const modelRaycaster = new THREE.Raycaster();
 const modelPointer = new THREE.Vector2();
 let modelsLoadRequested = false;
@@ -2467,6 +2889,11 @@ async function loadSceneModels() {
       holder.name = `model-${def.name}`;
       holder.add(root);
 
+      // Capture the holder-local bounds now, while the holder is still at identity,
+      // so each frame's world AABB is just localBox * holder.matrixWorld — cheap and
+      // automatically tracks any later gizmo/localStorage transform of the holder.
+      const localBox = new THREE.Box3().setFromObject(root);
+
       let transformLoaded = false;
       const savedStr = localStorage.getItem("paperTrailModelTransforms");
       if (savedStr) {
@@ -2514,7 +2941,14 @@ async function loadSceneModels() {
         mixer.clipAction(sitClip).play();
       }
 
-      sceneModels.push({ name: def.name, label: def.label, holder, mixer });
+      sceneModels.push({
+        name: def.name,
+        label: def.label,
+        holder,
+        mixer,
+        collidable: !!def.collidable,
+        localBox,
+      });
       refreshModelButtons();
       updateCoordsReadout();
     } catch (err) {

@@ -16,6 +16,10 @@ export type WorldConfig = {
   objectPos?: [number, number, number];
   objectScale?: number;
   colliderUrl?: string;
+  /** Collider transform. Defaults to the splat's position/rotation/scale when omitted. */
+  colliderPosition?: [number, number, number];
+  colliderRotation?: [number, number, number]; // radians
+  colliderScale?: number;
 };
 
 export const WORLDS: WorldConfig[] = [
@@ -23,12 +27,15 @@ export const WORLDS: WorldConfig[] = [
     id: "world-one",
     name: "Elephants TRavels",
     subtitle: "Fly through a miniature ancient courtyard",
-    // Replace with: /assets/worlds/chinese-world.ply
-    splatUrl: "/assets/worlds/egyptian-simpson.compressed.ply",
-    position: [0, -2.2, -12],
-    rotation: [Math.PI, 0, 0],
-    scale: 4,
-    spawn: [0, 1.2, 6],
+    splatUrl: "/assets/worlds/Ancient%20Egyptian%20Desert%20Palace.spz",
+    colliderUrl: "/assets/worlds/Ancient%20Egyptian%20Desert%20Palace_collider.glb",
+    position: [0, -0.3, 0],
+    rotation: [-0.0349, 0, 0],
+    scale: 2.7,
+    // Hover just above the Dad model (placed at [-4.25, 1, -4]) — the visual
+    // centre of the palace — facing into the scene toward the other props.
+    spawn: [-4.25, 5, -4],
+    spawnRotation: 0,
     portal: [0, 3, -18],
     bounds: {
       min: [-22, -2, -28],

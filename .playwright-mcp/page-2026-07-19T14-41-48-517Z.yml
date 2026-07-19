@@ -1,0 +1,12 @@
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - button "⚙️ Admin" [ref=e6] [cursor=pointer]
+    - generic [ref=e10]:
+      - generic [ref=e11]: A Gaussian Splat Flight Adventure
+      - generic [ref=e12]: Memories in Flight
+      - heading "Fly Like a Pharaoh." [level=1] [ref=e13]
+      - paragraph [ref=e14]: Control the airplane using only your hands. Pilot your flight through historic and cultural worlds reconstructed as immersive Gaussian splats.
+      - button "Continue" [ref=e15] [cursor=pointer]
+    - generic [ref=e16]: Two worlds · One continuous flight
+  - option "Elephants TRavels (Default)" [selected]
+  - generic: ✋ Hand Control Feed

@@ -1,0 +1,141 @@
+- generic [ref=f17e2]:
+  - generic [ref=f17e42]:
+    - generic:
+      - generic [ref=f17e43]:
+        - generic [ref=f17e44]:
+          - generic [ref=f17e45]: Splatwing
+          - button "⚙️ Admin" [ref=f17e46] [cursor=pointer]
+        - generic [ref=f17e47]:
+          - strong [ref=f17e48]: Elephants TRavels
+          - generic [ref=f17e49]: Fly through a miniature ancient courtyard
+      - generic:
+        - generic: WASD / Arrows steer · Space thrust · Shift boostSingle world mode (Portals disabled).
+        - generic:
+          - generic: Airspeed
+          - strong: 36 km/h
+          - emphasis: World two queued
+    - generic:
+      - generic:
+        - generic: Dad
+        - paragraph: When I tried to retrieve the sandal, my hand became stuck inside the vessel.
+  - generic:
+    - generic:
+      - generic:
+        - heading "Admin Control Center" [level=2]
+        - button "×" [active]
+      - generic:
+        - button "Upload & Worlds"
+        - button "Splat Orientation"
+        - button "Scene Objects"
+        - button "Collider"
+      - generic:
+        - generic:
+          - generic:
+            - heading "Customize Custom World Settings" [level=3]
+            - generic:
+              - generic: World Name
+              - textbox
+            - generic:
+              - generic: Mesh Collider
+              - combobox:
+                - option "None" [selected]
+                - option "Ancient Egyptian Desert Palace Collider"
+            - generic: Splat Position Offset
+            - generic:
+              - generic:
+                - generic: Position X
+                - spinbutton
+              - generic:
+                - generic: Position Y
+                - spinbutton
+              - generic:
+                - generic: Position Z
+                - spinbutton
+            - generic: Splat Rotation (Degrees)
+            - generic:
+              - generic:
+                - generic: Pitch (Rotation X)
+                - generic: 1°
+              - slider: "1"
+            - generic:
+              - generic:
+                - generic: Yaw (Rotation Y)
+                - generic: 0°
+              - slider: "0"
+            - generic:
+              - generic:
+                - generic: Roll (Rotation Z)
+                - generic: 0°
+              - slider: "0"
+            - generic:
+              - generic:
+                - generic: Scale
+                - generic: "4.0"
+              - generic:
+                - slider: "10.1"
+                - spinbutton
+            - generic: Airplane Spawn Point
+            - generic:
+              - generic:
+                - generic: Spawn X
+                - spinbutton
+              - generic:
+                - generic: Spawn Y
+                - spinbutton
+              - generic:
+                - generic: Spawn Z
+                - spinbutton
+            - generic:
+              - generic:
+                - generic: Spawn Rotation (Yaw)
+                - generic: 180°
+              - generic:
+                - slider: "180"
+                - spinbutton: "180"
+            - generic: Collectible Target Object Placement
+            - generic:
+              - generic:
+                - generic: Object X
+                - spinbutton
+              - generic:
+                - generic: Object Y
+                - spinbutton
+              - generic:
+                - generic: Object Z
+                - spinbutton
+            - generic:
+              - generic:
+                - generic: Object Scale
+                - generic: "1.0"
+              - generic:
+                - slider: "1"
+                - spinbutton: "1.0"
+            - generic: Flight Boundaries Min
+            - generic:
+              - generic:
+                - generic: Min X
+                - spinbutton
+              - generic:
+                - generic: Min Y
+                - spinbutton
+              - generic:
+                - generic: Min Z
+                - spinbutton
+            - generic: Flight Boundaries Max
+            - generic:
+              - generic:
+                - generic: Max X
+                - spinbutton
+              - generic:
+                - generic: Max Y
+                - spinbutton
+              - generic:
+                - generic: Max Z
+                - spinbutton
+            - button "Save & Apply Settings"
+            - button "Delete World"
+          - generic:
+            - text: Select a
+            - strong: Custom World
+            - text: to customize its orientation and settings.
+  - generic: ✋ Hand Control Feed

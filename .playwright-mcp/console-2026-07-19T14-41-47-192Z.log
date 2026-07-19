@@ -1,0 +1,59 @@
+[     225ms] [LOG] Video source path: /assets/VideoIntro.mp4 @ http://localhost:5176/src/main.ts:1704
+[   60065ms] [LOG] Silent preloading first world in background: Elephants TRavels @ http://localhost:5176/src/main.ts:1246
+[   60190ms] [LOG] Preloading first world... 0% @ http://localhost:5176/src/main.ts:1250
+[   60239ms] [LOG] Preloading first world... 3% @ http://localhost:5176/src/main.ts:1250
+[   60264ms] [LOG] Preloading first world... 4% @ http://localhost:5176/src/main.ts:1250
+[   60267ms] [LOG] Preloading first world... 7% @ http://localhost:5176/src/main.ts:1250
+[   60289ms] [LOG] Preloading first world... 7% @ http://localhost:5176/src/main.ts:1250
+[   60292ms] [LOG] Preloading first world... 7% @ http://localhost:5176/src/main.ts:1250
+[   60294ms] [LOG] Preloading first world... 10% @ http://localhost:5176/src/main.ts:1250
+[   60312ms] [LOG] Preloading first world... 11% @ http://localhost:5176/src/main.ts:1250
+[   60318ms] [LOG] Preloading first world... 11% @ http://localhost:5176/src/main.ts:1250
+[   60320ms] [LOG] Preloading first world... 13% @ http://localhost:5176/src/main.ts:1250
+[   60342ms] [LOG] Preloading first world... 14% @ http://localhost:5176/src/main.ts:1250
+[   60348ms] [LOG] Preloading first world... 14% @ http://localhost:5176/src/main.ts:1250
+[   60350ms] [LOG] Preloading first world... 14% @ http://localhost:5176/src/main.ts:1250
+[   60352ms] [LOG] Preloading first world... 17% @ http://localhost:5176/src/main.ts:1250
+[   60376ms] [LOG] Preloading first world... 18% @ http://localhost:5176/src/main.ts:1250
+[   60385ms] [LOG] Preloading first world... 18% @ http://localhost:5176/src/main.ts:1250
+[   60389ms] [LOG] Preloading first world... 20% @ http://localhost:5176/src/main.ts:1250
+[   60404ms] [LOG] Preloading first world... 21% @ http://localhost:5176/src/main.ts:1250
+[   60413ms] [LOG] Preloading first world... 22% @ http://localhost:5176/src/main.ts:1250
+[   60417ms] [LOG] Preloading first world... 22% @ http://localhost:5176/src/main.ts:1250
+[   60421ms] [LOG] Preloading first world... 22% @ http://localhost:5176/src/main.ts:1250
+[   60422ms] [LOG] Preloading first world... 22% @ http://localhost:5176/src/main.ts:1250
+[   60423ms] [LOG] Preloading first world... 23% @ http://localhost:5176/src/main.ts:1250
+[   60427ms] [LOG] Preloading first world... 23% @ http://localhost:5176/src/main.ts:1250
+[   60433ms] [LOG] Preloading first world... 26% @ http://localhost:5176/src/main.ts:1250
+[   60449ms] [LOG] Preloading first world... 26% @ http://localhost:5176/src/main.ts:1250
+[   60450ms] [LOG] Preloading first world... 26% @ http://localhost:5176/src/main.ts:1250
+[   60451ms] [LOG] Preloading first world... 27% @ http://localhost:5176/src/main.ts:1250
+[   60455ms] [LOG] Preloading first world... 29% @ http://localhost:5176/src/main.ts:1250
+[   60473ms] [LOG] Preloading first world... 30% @ http://localhost:5176/src/main.ts:1250
+[   60479ms] [LOG] Preloading first world... 33% @ http://localhost:5176/src/main.ts:1250
+[   60501ms] [LOG] Preloading first world... 36% @ http://localhost:5176/src/main.ts:1250
+[   60534ms] [LOG] Preloading first world... 40% @ http://localhost:5176/src/main.ts:1250
+[   60557ms] [LOG] Preloading first world... 43% @ http://localhost:5176/src/main.ts:1250
+[   60583ms] [LOG] Preloading first world... 46% @ http://localhost:5176/src/main.ts:1250
+[   60620ms] [LOG] Preloading first world... 50% @ http://localhost:5176/src/main.ts:1250
+[   60654ms] [LOG] Preloading first world... 53% @ http://localhost:5176/src/main.ts:1250
+[   60682ms] [LOG] Preloading first world... 56% @ http://localhost:5176/src/main.ts:1250
+[   60706ms] [LOG] Preloading first world... 60% @ http://localhost:5176/src/main.ts:1250
+[   60730ms] [LOG] Preloading first world... 63% @ http://localhost:5176/src/main.ts:1250
+[   60764ms] [LOG] Preloading first world... 66% @ http://localhost:5176/src/main.ts:1250
+[   60790ms] [LOG] Preloading first world... 70% @ http://localhost:5176/src/main.ts:1250
+[   60867ms] [LOG] Preloading first world... 73% @ http://localhost:5176/src/main.ts:1250
+[   60972ms] [LOG] Preloading first world... 76% @ http://localhost:5176/src/main.ts:1250
+[   61054ms] [LOG] Preloading first world... 80% @ http://localhost:5176/src/main.ts:1250
+[   61163ms] [LOG] Preloading first world... 83% @ http://localhost:5176/src/main.ts:1250
+[   61241ms] [LOG] Preloading first world... 86% @ http://localhost:5176/src/main.ts:1250
+[   61306ms] [LOG] Preloading first world... 89% @ http://localhost:5176/src/main.ts:1250
+[   61364ms] [LOG] Preloading first world... 93% @ http://localhost:5176/src/main.ts:1250
+[   61412ms] [LOG] Preloading first world... 96% @ http://localhost:5176/src/main.ts:1250
+[   61459ms] [LOG] Preloading first world... 99% @ http://localhost:5176/src/main.ts:1250
+[   61532ms] [LOG] Preloading first world... 100% @ http://localhost:5176/src/main.ts:1250
+[   61553ms] [LOG] Loaded 4320000 splats. Starting Tiny LoD build... @ blob:http://localhost:5176/c9526123-0ac7-424c-949b-1740594915f1:1138
+[   71721ms] [LOG] Playing video intro from path: /assets/VideoIntro.mp4 @ http://localhost:5176/src/main.ts:1742
+[   71830ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5176/favicon.ico:0
+[   76523ms] [LOG] Tiny LoD: 4320000 -> 5924840 (14969.100000023842 ms) @ blob:http://localhost:5176/c9526123-0ac7-424c-949b-1740594915f1:1150
+[   78092ms] [LOG] First world preloaded successfully and ready! @ http://localhost:5176/src/main.ts:1257

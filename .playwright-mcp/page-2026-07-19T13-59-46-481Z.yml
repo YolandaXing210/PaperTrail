@@ -1,0 +1,63 @@
+- generic [ref=f9e2]:
+  - generic [ref=f9e4]:
+    - button "⚙️ Admin" [ref=f9e6] [cursor=pointer]
+    - generic [ref=f9e10]:
+      - generic [ref=f9e11]: A Gaussian Splat Flight Adventure
+      - heading "Fly Like a Pharaoh." [level=1] [ref=f9e12]
+      - paragraph [ref=f9e13]: Control the airplane using only your hands. Pilot your flight through historic and cultural worlds reconstructed as immersive Gaussian splats.
+      - button "Continue" [ref=f9e14] [cursor=pointer]
+    - generic [ref=f9e15]: Two worlds · One continuous flight
+  - generic [ref=f9e17]:
+    - generic [ref=f9e18]:
+      - heading "Admin Control Center" [level=2] [ref=f9e19]
+      - button "×" [ref=f9e20] [cursor=pointer]
+    - generic [ref=f9e21]:
+      - button "Upload & Worlds" [ref=f9e22] [cursor=pointer]
+      - button "Splat Orientation" [ref=f9e23] [cursor=pointer]
+      - button "Scene Objects" [active] [ref=f9e24] [cursor=pointer]
+    - generic [ref=f9e46]:
+      - generic [ref=f9e47]:
+        - heading "Camera" [level=3] [ref=f9e48]
+        - 'button "🎥 Free Camera: OFF" [ref=f9e49] [cursor=pointer]'
+        - paragraph [ref=f9e50]: Detaches the camera from the airplane. Fly with W A S D, ascend / descend with ↑ ↓, turn with ← →, hold Shift to move faster, and drag the mouse to look around. Close this panel to roam the scene.
+      - generic [ref=f9e51]:
+        - heading "Placed Models" [level=3] [ref=f9e52]
+        - generic [ref=f9e53]: Models load when the world starts or when Free Camera is enabled.
+        - paragraph [ref=f9e54]: Pick a model here — or click it directly in the scene — then set its position, rotation, and scale below.
+      - generic [ref=f9e55]:
+        - heading "Transform — none selected —" [level=3] [ref=f9e56]
+        - generic [ref=f9e57]: Position
+        - generic [ref=f9e58]:
+          - generic [ref=f9e59]:
+            - generic [ref=f9e60]: X
+            - spinbutton [ref=f9e61]
+          - generic [ref=f9e62]:
+            - generic [ref=f9e63]: "Y"
+            - spinbutton [ref=f9e64]
+          - generic [ref=f9e65]:
+            - generic [ref=f9e66]: Z
+            - spinbutton [ref=f9e67]
+        - generic [ref=f9e68]: Rotation (degrees)
+        - generic [ref=f9e69]:
+          - generic [ref=f9e70]:
+            - generic [ref=f9e71]: X
+            - spinbutton [ref=f9e72]
+          - generic [ref=f9e73]:
+            - generic [ref=f9e74]: "Y"
+            - spinbutton [ref=f9e75]
+          - generic [ref=f9e76]:
+            - generic [ref=f9e77]: Z
+            - spinbutton [ref=f9e78]
+        - generic [ref=f9e79]:
+          - generic [ref=f9e80]:
+            - generic [ref=f9e81]: Scale
+            - generic [ref=f9e82]: "1.0"
+          - generic [ref=f9e83]:
+            - slider [ref=f9e84] [cursor=pointer]: "10.05"
+            - spinbutton [ref=f9e85]
+      - generic [ref=f9e86]:
+        - heading "Coordinates" [level=3] [ref=f9e87]
+        - button "📋 Copy Model Coordinates" [ref=f9e88] [cursor=pointer]
+        - button "💾 Save & Apply for Gameplay" [ref=f9e89] [cursor=pointer]
+        - generic [ref=f9e90]: No models loaded yet.
+  - generic: ✋ Hand Control Feed

@@ -28,7 +28,7 @@ export const CAPTION_SCRIPT: CaptionGroup[] = [
   { audio: "1.mp3", lines: [Dad("Have I ever told you how I met your mother?")] },
   { audio: "2.mp3", lines: [Dad("It began with a cat—a small black cat who stole my breakfast and ran away with an entire fish.")] },
   { audio: "3.mp3", lines: [Uti("You chased a cat over a fish?")] },
-  { audio: "4.mp3", lines: [Uti("It was a very good fish.")] },
+  { audio: "4.mp3", lines: [Dad("It was a very good fish.")] },
   { audio: "5.mp3", lines: [Dad("I chased the cat through the market until I tripped over a sandal lying in the road. The sandal flew through the air and landed—plop!—inside a beautiful Egyptian vessel.")] },
   { audio: "6.mp3", lines: [Dad("That vessel belonged to your mother.")] },
   { audio: "7.mp3", lines: [Uti("She was selling pottery?")] },
