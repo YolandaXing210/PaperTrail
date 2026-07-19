@@ -7,6 +7,7 @@ export type WorldConfig = {
   rotation: [number, number, number];
   scale: number;
   spawn: [number, number, number];
+  spawnRotation?: number;
   portal: [number, number, number];
   bounds: {
     min: [number, number, number];

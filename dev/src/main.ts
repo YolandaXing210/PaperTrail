@@ -132,6 +132,8 @@ app.innerHTML = `
     <button id="skip-video-btn" class="skip-video-btn">Skip intro ▸</button>
   </div>
 
+  <div id="white-flash" class="white-flash"></div>
+
   <div id="loader" class="loader hidden">
     <div class="loader-card">
       <div class="loader-ring"></div>
@@ -318,6 +320,17 @@ app.innerHTML = `
                 <input type="number" id="prop-spawn-z" step="0.5" />
               </div>
             </div>
+            
+            <div class="form-row-slider" style="margin-top: 12px;">
+              <div class="slider-label-row">
+                <label>Spawn Rotation (Yaw)</label>
+                <span id="label-spawn-rot">180°</span>
+              </div>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="range" id="prop-spawn-rot-slider" min="-180" max="180" step="1" value="180" style="flex: 1;" />
+                <input type="number" id="prop-spawn-rot" step="1" value="180" style="width: 70px;" />
+              </div>
+            </div>
 
             <!-- Target Object (Collectible Target) Placement -->
             <div class="form-section-title" style="margin-top: 16px;">Collectible Target Object Placement</div>
@@ -495,6 +508,9 @@ const labelRotZ = document.querySelector<HTMLSpanElement>("#label-rot-z")!;
 const propSpawnX = document.querySelector<HTMLInputElement>("#prop-spawn-x")!;
 const propSpawnY = document.querySelector<HTMLInputElement>("#prop-spawn-y")!;
 const propSpawnZ = document.querySelector<HTMLInputElement>("#prop-spawn-z")!;
+const propSpawnRot = document.querySelector<HTMLInputElement>("#prop-spawn-rot")!;
+const propSpawnRotSlider = document.querySelector<HTMLInputElement>("#prop-spawn-rot-slider")!;
+const labelSpawnRot = document.querySelector<HTMLSpanElement>("#label-spawn-rot")!;
 const propObjX = document.querySelector<HTMLInputElement>("#prop-obj-x")!;
 const propObjY = document.querySelector<HTMLInputElement>("#prop-obj-y")!;
 const propObjZ = document.querySelector<HTMLInputElement>("#prop-obj-z")!;
@@ -928,6 +944,10 @@ let activeWorldIndex = 0;
 let activeSplat: SplatMesh | null = null;
 let preloadedSplat: SplatMesh | null = null;
 let preloadPromise: Promise<SplatMesh> | null = null;
+let worldOnePreloadedSplat: SplatMesh | null = null;
+let worldOnePreloadPromise: Promise<SplatMesh> | null = null;
+let worldOneLoadProgress = 0;
+let worldOnePreloadedId: string | null = null;
 let isTransitioning = false;
 const velocity = new THREE.Vector3();
 const desiredVelocity = new THREE.Vector3();
@@ -967,6 +987,38 @@ function createSplat(world: WorldConfig, lowDetail: boolean, onProgress?: (event
   return splat;
 }
 
+async function preloadFirstWorld() {
+  if (worldOnePreloadedSplat || worldOnePreloadPromise) return;
+  await loadWorldsList();
+  const world = getCurrentWorldConfig(activeWorldId) || WORLDS[0];
+  worldOnePreloadedId = world.id;
+
+  console.log("Silent preloading first world in background:", world.name);
+  const splat = createSplat(world, false, (event) => {
+    if (event.lengthComputable && event.total > 0) {
+      worldOneLoadProgress = Math.round((event.loaded / event.total) * 100);
+      console.log(`Preloading first world... ${worldOneLoadProgress}%`);
+    }
+  });
+
+  // Load in background silently (transparent)
+  splat.opacity = 0;
+  scene.add(splat);
+
+  worldOnePreloadPromise = splat.initialized.then(() => {
+    worldOnePreloadedSplat = splat;
+    console.log("First world preloaded successfully and ready!");
+    return splat;
+  }).catch((error) => {
+    console.error("Background preloading of first world failed:", error);
+    scene.remove(splat);
+    splat.dispose();
+    worldOnePreloadPromise = null;
+    worldOnePreloadedId = null;
+    throw error;
+  });
+}
+
 async function preloadSecondWorld() {
   if (!enableTransitions || activeWorldId !== "world-one" || preloadedSplat || preloadPromise) return;
   const world = WORLDS[1];
@@ -1001,31 +1053,71 @@ async function startAdventure() {
   if (phase !== "onboarding") return;
   phase = "loading";
   onboarding.classList.add("hidden-screen");
-  loader.classList.remove("hidden");
-  loaderProgress.textContent = "Downloading the Gaussian world...";
-
-  await loadWorldsList();
 
   const world = getCurrentWorldConfig(activeWorldId) || WORLDS[0];
-  const splat = createSplat(world, false, (event) => {
-    if (event.lengthComputable && event.total > 0) {
-      loaderProgress.textContent = `${Math.round((event.loaded / event.total) * 100)}% loaded`;
+  let splat: SplatMesh;
+
+  if (worldOnePreloadedId === world.id && (worldOnePreloadedSplat || worldOnePreloadPromise)) {
+    console.log("Found preloading state for World One. Resolving...");
+    if (!worldOnePreloadedSplat) {
+      loader.classList.remove("hidden");
+      loaderProgress.textContent = `Downloading the Gaussian world... (${worldOneLoadProgress}%)`;
+
+      const progressInterval = setInterval(() => {
+        if (worldOnePreloadedSplat) {
+          clearInterval(progressInterval);
+        } else {
+          loaderProgress.textContent = `Downloading the Gaussian world... (${worldOneLoadProgress}%)`;
+        }
+      }, 100);
+
+      try {
+        splat = await worldOnePreloadPromise!;
+        clearInterval(progressInterval);
+      } catch (error) {
+        clearInterval(progressInterval);
+        console.warn("Preloaded splat failed, reloading in foreground...");
+        loader.classList.remove("hidden");
+        loaderProgress.textContent = "Downloading the Gaussian world...";
+        splat = createSplat(world, false);
+        scene.add(splat);
+        await splat.initialized;
+      }
     } else {
-      loaderProgress.textContent = "Streaming Gaussian data...";
+      console.log("World One already fully preloaded in background!");
+      splat = worldOnePreloadedSplat;
     }
-  });
-  scene.add(splat);
-  await splat.initialized;
+    // Fade in/make visible the preloaded splat
+    splat.opacity = 1;
+    // Consume preloaded references
+    worldOnePreloadedSplat = null;
+    worldOnePreloadPromise = null;
+    worldOnePreloadedId = null;
+  } else {
+    loader.classList.remove("hidden");
+    loaderProgress.textContent = "Downloading the Gaussian world...";
+    await loadWorldsList();
+    splat = createSplat(world, false, (event) => {
+      if (event.lengthComputable && event.total > 0) {
+        loaderProgress.textContent = `${Math.round((event.loaded / event.total) * 100)}% loaded`;
+      } else {
+        loaderProgress.textContent = "Streaming Gaussian data...";
+      }
+    });
+    scene.add(splat);
+    await splat.initialized;
+  }
 
   activeSplat = splat;
   plane.position.set(...world.spawn);
   plane.visible = true;
   portalGroup.position.set(...world.portal);
   portalGroup.visible = enableTransitions;
-  velocity.set(0, 0, -3);
-  planeYaw = Math.PI;
+  planeYaw = world.spawnRotation ?? Math.PI;
   planePitch = 0;
   plane.quaternion.setFromEuler(new THREE.Euler(0, planeYaw, 0));
+  const startForward = new THREE.Vector3(0, 0, -1).applyQuaternion(plane.quaternion);
+  velocity.copy(startForward).multiplyScalar(3);
   setHud(world);
   camera.position.copy(plane.position).add(new THREE.Vector3(0, 4.8, 10));
   camera.lookAt(plane.position);
@@ -1098,10 +1190,11 @@ async function activateWorldById(id: string) {
 
   activeSplat = nextSplat;
   plane.position.set(...world.spawn);
-  velocity.set(0, 0, -3);
-  planeYaw = Math.PI;
+  planeYaw = world.spawnRotation ?? Math.PI;
   planePitch = 0;
   plane.quaternion.setFromEuler(new THREE.Euler(0, planeYaw, 0));
+  const startForward = new THREE.Vector3(0, 0, -1).applyQuaternion(plane.quaternion);
+  velocity.copy(startForward).multiplyScalar(3);
   portalGroup.position.set(...world.portal);
   portalGroup.visible = enableTransitions;
   setHud(world);
@@ -1313,20 +1406,45 @@ continueButton.addEventListener("click", () => {
   phase = "onboarding";
   intro.classList.add("hidden-screen");
   onboarding.classList.remove("hidden-screen");
+  void preloadFirstWorld();
 });
 // Video intro: plays after the flight-briefing "direction" page and before the world loads.
 const videoIntro = document.querySelector<HTMLDivElement>("#video-intro")!;
 const introVideo = document.querySelector<HTMLVideoElement>("#intro-video")!;
 console.log("Video source path:", introVideo.querySelector("source")?.getAttribute("src") || introVideo.src);
 const skipVideoBtn = document.querySelector<HTMLButtonElement>("#skip-video-btn")!;
+const whiteFlash = document.querySelector<HTMLElement>("#white-flash")!;
 let videoIntroDone = false;
 
 function finishVideoIntro() {
   if (videoIntroDone) return;
   videoIntroDone = true;
-  introVideo.pause();
-  videoIntro.classList.add("hidden-screen");
-  void startAdventure();
+
+  // 1. Fade to white overlay
+  whiteFlash.classList.add("active");
+
+  // 2. Wait for fade-to-white transition (0.5s) to complete
+  setTimeout(async () => {
+    // 3. Pause video and hide video screen while screen is fully white
+    introVideo.pause();
+    videoIntro.classList.add("hidden-screen");
+
+    // 4. Start the adventure (loads/reveals splat, positions plane/camera)
+    const isPreloaded = !!worldOnePreloadedSplat;
+    const adventurePromise = startAdventure();
+
+    if (isPreloaded) {
+      // If already preloaded, wait for setup and reveal seamlessly
+      await adventurePromise;
+      setTimeout(() => {
+        whiteFlash.classList.remove("active");
+      }, 100);
+    } else {
+      // If still loading, fade out the white screen to reveal the loader screen
+      whiteFlash.classList.remove("active");
+      await adventurePromise;
+    }
+  }, 500);
 }
 
 introVideo.addEventListener("ended", finishVideoIntro);
@@ -1340,6 +1458,7 @@ introVideo.addEventListener("error", (e) => {
 
 startButton.addEventListener("click", () => {
   if (phase !== "onboarding") return;
+  void preloadFirstWorld();
   videoIntroDone = false;
   onboarding.classList.add("hidden-screen");
   videoIntro.classList.remove("hidden-screen");
@@ -1397,6 +1516,7 @@ adminToggleBtns.forEach(btn => {
       const world = getCurrentWorldConfig(activeWorldId);
       if (world) {
         spawnHelper.position.set(...world.spawn);
+        spawnHelper.rotation.y = world.spawnRotation ?? Math.PI;
         spawnHelper.visible = true;
       }
     } else {
@@ -1497,6 +1617,10 @@ function onWorldSelectChanged(id: string) {
       propSpawnX.value = String(world.spawn[0]);
       propSpawnY.value = String(world.spawn[1]);
       propSpawnZ.value = String(world.spawn[2]);
+      const spawnRotDeg = Math.round((world.spawnRotation ?? Math.PI) * 180 / Math.PI);
+      propSpawnRot.value = String(spawnRotDeg);
+      propSpawnRotSlider.value = String(spawnRotDeg);
+      labelSpawnRot.textContent = `${spawnRotDeg}°`;
       propMinX.value = String(world.bounds.min[0]);
       propMinY.value = String(world.bounds.min[1]);
       propMinZ.value = String(world.bounds.min[2]);
@@ -1544,6 +1668,7 @@ savePropertiesBtn.addEventListener("click", async () => {
       parseFloat(propSpawnY.value) || 1.2,
       parseFloat(propSpawnZ.value) || 6
     ];
+    customWorld.spawnRotation = (parseFloat(propSpawnRot.value) || 180) * Math.PI / 180;
     customWorld.bounds = {
       min: [
         parseFloat(propMinX.value) || -40,
@@ -1716,11 +1841,12 @@ function updateSplatRealtime() {
     activeSplat.position.set(posX, posY, posZ);
   }
 
-  // Update spawnHelper position
+  // Update spawnHelper position and rotation (yaw)
   const spawnX = parseFloat(propSpawnX.value) || 0;
   const spawnY = parseFloat(propSpawnY.value) || 0;
   const spawnZ = parseFloat(propSpawnZ.value) || 0;
   spawnHelper.position.set(spawnX, spawnY, spawnZ);
+  spawnHelper.rotation.y = (parseFloat(propSpawnRot.value) || 180) * Math.PI / 180;
 
   // Update object target position and scale
   const objX = parseFloat(propObjX.value) || 0;
@@ -1768,6 +1894,18 @@ propPosZ.addEventListener("input", updateSplatRealtime);
 propSpawnX.addEventListener("input", updateSplatRealtime);
 propSpawnY.addEventListener("input", updateSplatRealtime);
 propSpawnZ.addEventListener("input", updateSplatRealtime);
+
+// Sync Spawn Rotation input and slider
+propSpawnRotSlider.addEventListener("input", () => {
+  propSpawnRot.value = propSpawnRotSlider.value;
+  labelSpawnRot.textContent = `${propSpawnRotSlider.value}°`;
+  updateSplatRealtime();
+});
+propSpawnRot.addEventListener("input", () => {
+  propSpawnRotSlider.value = propSpawnRot.value;
+  labelSpawnRot.textContent = `${propSpawnRot.value}°`;
+  updateSplatRealtime();
+});
 
 // Sync Target Object inputs and sliders
 propObjScaleSlider.addEventListener("input", () => {
