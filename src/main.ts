@@ -129,7 +129,9 @@ app.innerHTML = `
   </section>
 
   <div id="video-intro" class="video-intro hidden-screen">
-    <video id="intro-video" playsinline preload="auto">
+    <!-- preload="none" keeps this ~5MB file off the t=0 critical path; buffering
+         starts on "Continue" so it's warm by the time the briefing is read. -->
+    <video id="intro-video" playsinline preload="none">
       <source src="/assets/VideoIntro.mp4" type="video/mp4" />
     </video>
     <button id="skip-video-btn" class="skip-video-btn">Skip intro ▸</button>
@@ -176,11 +178,6 @@ app.innerHTML = `
           <b>WASD / Arrows</b> steer &nbsp;·&nbsp; <b>Space</b> thrust &nbsp;·&nbsp; <b>Shift</b> boost<br/>
           Fly into the glowing portal to change worlds.<br/>
           <b>Press 1</b> to reset view &nbsp;·&nbsp; <b>Press 2</b> to toggle hand-pose tracking
-        </div>
-        <div class="status">
-          <small>Airspeed</small>
-          <strong><span id="speed">0</span> km/h</strong>
-          <em id="preload-status">World two queued</em>
         </div>
       </div>
     </div>
@@ -245,9 +242,9 @@ app.innerHTML = `
             <div class="form-row-slider">
               <div class="slider-label-row">
                 <label>🎵 Background Music Volume</label>
-                <span id="label-bgm-volume">40%</span>
+                <span id="label-bgm-volume">20%</span>
               </div>
-              <input type="range" id="bgm-volume-slider" min="0" max="1" step="0.01" value="0.4" style="width: 100%;" />
+              <input type="range" id="bgm-volume-slider" min="0" max="1" step="0.01" value="0.2" style="width: 100%;" />
             </div>
           </div>
 
@@ -678,7 +675,7 @@ let captionsStarted = false;
 // Looping background music for the world, started once the flight begins (after
 // the intro video). Kept well below the Dad/Uti voiceover level so narration
 // stays clearly on top.
-const BGM_DEFAULT_VOLUME = 0.4;
+const BGM_DEFAULT_VOLUME = 0.2;
 const bgMusic = new Audio("/assets/music/BGM.mp3");
 bgMusic.loop = true;
 bgMusic.preload = "auto";
@@ -687,8 +684,10 @@ bgMusic.volume = Number.isFinite(savedBgmVolume) ? savedBgmVolume : BGM_DEFAULT_
 // World-name card was removed from the HUD; keep these null-safe in case it returns.
 const worldName = document.querySelector<HTMLElement>("#world-name");
 const worldSubtitle = document.querySelector<HTMLElement>("#world-subtitle");
-const speedLabel = document.querySelector<HTMLElement>("#speed")!;
-const preloadStatus = document.querySelector<HTMLElement>("#preload-status")!;
+// Bottom-right status panel (airspeed + world-two preload) was removed from the HUD;
+// keep these null-safe so the preload/render logic below can stay as-is.
+const speedLabel = document.querySelector<HTMLElement>("#speed");
+const preloadStatus = document.querySelector<HTMLElement>("#preload-status");
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.7));
@@ -1457,11 +1456,11 @@ async function preloadFirstWorld() {
 async function preloadSecondWorld() {
   if (!enableTransitions || activeWorldId !== "world-one" || preloadedSplat || preloadPromise) return;
   const world = WORLDS[1];
-  preloadStatus.textContent = "Preloading world two · low LOD";
+  if (preloadStatus) preloadStatus.textContent = "Preloading world two · low LOD";
 
   const splat = createSplat(world, true, (event) => {
     if (event.lengthComputable && event.total > 0) {
-      preloadStatus.textContent = `Preloading world two · ${Math.round((event.loaded / event.total) * 100)}%`;
+      if (preloadStatus) preloadStatus.textContent = `Preloading world two · ${Math.round((event.loaded / event.total) * 100)}%`;
     }
   });
 
@@ -1471,13 +1470,13 @@ async function preloadSecondWorld() {
 
   preloadPromise = splat.initialized.then(() => {
     preloadedSplat = splat;
-    preloadStatus.textContent = "World two ready · low LOD";
+    if (preloadStatus) preloadStatus.textContent = "World two ready · low LOD";
     return splat;
   }).catch((error) => {
     scene.remove(splat);
     splat.dispose();
     preloadPromise = null;
-    preloadStatus.textContent = "World two will load at portal";
+    if (preloadStatus) preloadStatus.textContent = "World two will load at portal";
     throw error;
   });
 
@@ -1682,7 +1681,7 @@ async function activateWorldById(id: string) {
     nextSplat.lodScale = 1;
     preloadedSplat = null;
     preloadPromise = null;
-    preloadStatus.textContent = "World two active";
+    if (preloadStatus) preloadStatus.textContent = "World two active";
   } else {
     nextSplat = createSplat(world, false);
     scene.add(nextSplat);
@@ -1948,7 +1947,7 @@ function updatePlane(delta: number) {
   camera.lookAt(cameraLookTarget);
 
   // Airspeed using magnitude of full 3D velocity
-  speedLabel.textContent = String(Math.round(velocity.length() * 21));
+  if (speedLabel) speedLabel.textContent = String(Math.round(velocity.length() * 21));
 
   // Portal interactions - active only if portal transitions enabled
   if (enableTransitions && SHOW_PORTAL) {
@@ -2030,6 +2029,10 @@ continueButton.addEventListener("click", () => {
   phase = "onboarding";
   intro.classList.add("hidden-screen");
   onboarding.classList.remove("hidden-screen");
+  // Warm the intro video first — it plays before the world is revealed, so it
+  // needs to win the bandwidth race against the (much larger) splat preload.
+  introVideo.preload = "auto";
+  introVideo.load();
   void preloadFirstWorld();
 });
 // Video intro: plays after the flight-briefing "direction" page and before the world loads.
