@@ -1317,6 +1317,7 @@ continueButton.addEventListener("click", () => {
 // Video intro: plays after the flight-briefing "direction" page and before the world loads.
 const videoIntro = document.querySelector<HTMLDivElement>("#video-intro")!;
 const introVideo = document.querySelector<HTMLVideoElement>("#intro-video")!;
+console.log("Video source path:", introVideo.querySelector("source")?.getAttribute("src") || introVideo.src);
 const skipVideoBtn = document.querySelector<HTMLButtonElement>("#skip-video-btn")!;
 let videoIntroDone = false;
 
@@ -1331,7 +1332,9 @@ function finishVideoIntro() {
 introVideo.addEventListener("ended", finishVideoIntro);
 skipVideoBtn.addEventListener("click", finishVideoIntro);
 // Fail-safe: if the video errors while it's on screen, don't strand the user — go to the world.
-introVideo.addEventListener("error", () => {
+introVideo.addEventListener("error", (e) => {
+  console.error("Video failed to play/load. Error event:", e);
+  console.log("Attempted video source path:", introVideo.querySelector("source")?.getAttribute("src") || introVideo.src);
   if (!videoIntro.classList.contains("hidden-screen")) finishVideoIntro();
 });
 
@@ -1341,9 +1344,13 @@ startButton.addEventListener("click", () => {
   onboarding.classList.add("hidden-screen");
   videoIntro.classList.remove("hidden-screen");
   introVideo.currentTime = 0;
+  console.log("Playing video intro from path:", introVideo.querySelector("source")?.getAttribute("src") || introVideo.src);
   // The click is a user gesture, so playback with audio is allowed here.
   const playAttempt = introVideo.play();
-  if (playAttempt) playAttempt.catch(() => finishVideoIntro()); // autoplay/load blocked -> skip
+  if (playAttempt) playAttempt.catch((err) => {
+    console.warn("Video playback blocked/failed:", err);
+    finishVideoIntro();
+  }); // autoplay/load blocked -> skip
 });
 
 renderer.setAnimationLoop(() => {
