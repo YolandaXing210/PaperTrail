@@ -84,15 +84,14 @@ app.innerHTML = `
       <button class="admin-btn">⚙️ Admin</button>
     </div>
     <div class="intro-glow"></div>
-    <div class="intro-plane" aria-hidden="true">
-      <div class="plane-art"></div>
-      <div class="flight-line flight-line-one"></div>
-      <div class="flight-line flight-line-two"></div>
+    <div class="intro-flyer" aria-hidden="true">
+      <div class="flyer-border-glow"></div>
+      <img src="/assets/ui/egyptian_flyer.jpg" class="flyer-img" alt="Fly like a Pharaoh Control Briefing" />
     </div>
     <div class="intro-copy">
-      <div class="eyebrow">A Gaussian Splat Adventure</div>
-      <h1>Fly across worlds<br/>built from memories.</h1>
-      <p>Guide a tiny airplane through ancient Chinese and Japanese-inspired spaces reconstructed as Gaussian splats.</p>
+      <div class="eyebrow">A Gaussian Splat Flight Adventure</div>
+      <h1>Fly Like a Pharaoh.</h1>
+      <p>Control the airplane using only your hands. Pilot your flight through historic and cultural worlds reconstructed as immersive Gaussian splats.</p>
       <button id="continue-button" class="primary-button">Continue</button>
     </div>
     <div class="intro-footer">Two worlds · One continuous flight</div>
@@ -107,7 +106,7 @@ app.innerHTML = `
       <h2>Your adventure begins in the first memory world.</h2>
       <p>Steer through the environment, explore its details, and fly into the luminous portal to cross into the next culture.</p>
       <div class="control-briefing-wrapper" style="display: flex; gap: 32px; justify-content: center; align-items: center; margin: 20px auto 28px; flex-wrap: wrap;">
-        <div class="key-layout" aria-label="WASD controls" style="margin: 0;">
+        <div id="onboarding-wasd-layout" class="key-layout" aria-label="WASD controls" style="margin: 0;">
           <div></div><div class="keycap">W<span>Up</span></div><div></div>
           <div class="keycap">A<span>Left</span></div><div class="keycap">S<span>Down</span></div><div class="keycap">D<span>Right</span></div>
         </div>
@@ -118,7 +117,8 @@ app.innerHTML = `
       </div>
       <div class="briefing-grid">
         <div><strong>Thrust</strong><span>Hold Space to fly forward.</span></div>
-        <div><strong>Steer</strong><span>Use WASD or Arrow keys to guide.</span></div>
+        <div id="onboarding-steer-keyboard"><strong>Steer</strong><span>Use WASD or Arrow keys to guide.</span></div>
+        <div id="onboarding-steer-hand" style="display: none;"><strong>Steer</strong><span>Tilt hands left/right to bank, open/close them to pitch.</span></div>
         <div><strong>Transition</strong><span>Enter the portal to reach world two.</span></div>
       </div>
       <button id="start-button" class="primary-button">Start adventure</button>
@@ -222,6 +222,10 @@ app.innerHTML = `
             <label class="switch-label" style="margin-top: 10px; display: flex;">
               <input type="checkbox" id="bobbing-animation-toggle" />
               <span>Enable Airplane Bobbing Animation</span>
+            </label>
+            <label class="switch-label" style="margin-top: 10px; display: flex;">
+              <input type="checkbox" id="hand-control-toggle" />
+              <span>✋ Enable Hand Control (MediaPipe)</span>
             </label>
           </div>
 
@@ -475,6 +479,17 @@ app.innerHTML = `
     <span><b>W A S D</b> fly &nbsp;·&nbsp; <b>↑ ↓</b> up / down &nbsp;·&nbsp; <b>← →</b> turn &nbsp;·&nbsp; <b>Shift</b> faster &nbsp;·&nbsp; drag mouse to look</span>
     <span><b>Click</b> a model or press <b>1–4</b> to select &nbsp;·&nbsp; set position / rotation / scale in the panel &nbsp;·&nbsp; <b>C</b> copy coordinates</span>
   </div>
+
+  <div id="webcam-container" class="webcam-container hidden">
+    <div class="webcam-title">
+      <span>✋ Hand Control Feed</span>
+      <div id="webcam-status-dot" class="webcam-status-dot"></div>
+    </div>
+    <div class="webcam-preview-wrapper">
+      <video id="webcam-video" class="webcam-video" width="320" height="240" autoplay playsinline muted></video>
+      <canvas id="webcam-canvas" class="webcam-canvas" width="320" height="240"></canvas>
+    </div>
+  </div>
 `;
 
 const intro = document.querySelector<HTMLElement>("#intro")!;
@@ -497,6 +512,11 @@ const adminPanel = document.querySelector<HTMLDivElement>("#admin-panel")!;
 const adminCloseBtn = document.querySelector<HTMLButtonElement>("#admin-close-btn")!;
 const portalTransitionToggle = document.querySelector<HTMLInputElement>("#portal-transition-toggle")!;
 const bobbingAnimationToggle = document.querySelector<HTMLInputElement>("#bobbing-animation-toggle")!;
+const handControlToggle = document.querySelector<HTMLInputElement>("#hand-control-toggle")!;
+const webcamContainer = document.querySelector<HTMLDivElement>("#webcam-container")!;
+const webcamVideo = document.querySelector<HTMLVideoElement>("#webcam-video")!;
+const webcamCanvas = document.querySelector<HTMLCanvasElement>("#webcam-canvas")!;
+const webcamStatusDot = document.querySelector<HTMLDivElement>("#webcam-status-dot")!;
 const worldSelectDropdown = document.querySelector<HTMLSelectElement>("#world-select-dropdown")!;
 const plyDropzone = document.querySelector<HTMLDivElement>("#ply-dropzone")!;
 const plyFileInput = document.querySelector<HTMLInputElement>("#ply-file-input")!;
@@ -816,6 +836,254 @@ document.querySelectorAll<HTMLElement>("[data-key]").forEach((button) => {
   button.addEventListener("pointercancel", release);
   button.addEventListener("pointerleave", release);
 });
+
+// --- MediaPipe Hand Control logic ---
+let mediapipeInitialized = false;
+let mpHands: any = null;
+let mpCamera: any = null;
+let handControlActive = false;
+let bothHandsDetected = false;
+let leftHandPos: { x: number; y: number } | null = null;
+let rightHandPos: { x: number; y: number } | null = null;
+let leftHandOpenness = 1.0;
+let rightHandOpenness = 1.0;
+
+let smoothedYawSteer = 0.0;
+let smoothedPitchSteer = 0.0;
+
+// Neutral centers in coordinates (normalized 0 to 1)
+const LEFT_HAND_NEUTRAL_X = 0.65; // Left side of physical user (mirrors to right side of camera frame)
+const RIGHT_HAND_NEUTRAL_Y = 0.45; // Vertical neutral center
+
+let canvasCtx: CanvasRenderingContext2D | null = null;
+
+function calculateHandOpenness(landmarks: any[]): number {
+  if (landmarks.length < 21) return 1.0;
+  
+  const wrist = landmarks[0];
+  const knuckle = landmarks[9]; // Middle MCP
+  
+  const dx = knuckle.x - wrist.x;
+  const dy = knuckle.y - wrist.y;
+  const dz = knuckle.z - wrist.z;
+  const handScale = Math.sqrt(dx*dx + dy*dy + dz*dz) || 0.001;
+  
+  const tips = [8, 12, 16, 20];
+  let sumDist = 0;
+  for (const tipIdx of tips) {
+    const tip = landmarks[tipIdx];
+    const tx = tip.x - wrist.x;
+    const ty = tip.y - wrist.y;
+    const tz = tip.z - wrist.z;
+    sumDist += Math.sqrt(tx*tx + ty*ty + tz*tz);
+  }
+  
+  const R = sumDist / (4 * handScale);
+  
+  // Normalizing ratio R between min (closed fist) and max (open hand)
+  const R_min = 1.15;
+  const R_max = 1.85;
+  
+  const openness = (R - R_min) / (R_max - R_min);
+  return THREE.MathUtils.clamp(openness, 0, 1);
+}
+
+function onHandResults(results: any) {
+  if (!canvasCtx || !webcamCanvas || !webcamStatusDot) return;
+  
+  canvasCtx.save();
+  canvasCtx.clearRect(0, 0, webcamCanvas.width, webcamCanvas.height);
+  
+  canvasCtx.translate(webcamCanvas.width, 0);
+  canvasCtx.scale(-1, 1);
+  if (results.image) {
+    canvasCtx.drawImage(results.image, 0, 0, webcamCanvas.width, webcamCanvas.height);
+  }
+  
+  canvasCtx.restore();
+  
+  bothHandsDetected = false;
+  leftHandPos = null;
+  rightHandPos = null;
+  
+  let foundLeft = false;
+  let foundRight = false;
+
+  if (results.multiHandLandmarks && results.multiHandedness) {
+    for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+      const landmarks = results.multiHandLandmarks[i];
+      const label = results.multiHandedness[i].label; 
+      const wrist = landmarks[0];
+      
+      drawHandSkeleton(landmarks);
+      
+      if (label === "Left") {
+        leftHandPos = { x: wrist.x, y: wrist.y };
+        leftHandOpenness = calculateHandOpenness(landmarks);
+        foundLeft = true;
+      } else if (label === "Right") {
+        rightHandPos = { x: wrist.x, y: wrist.y };
+        rightHandOpenness = calculateHandOpenness(landmarks);
+        foundRight = true;
+      }
+    }
+    
+    if (foundLeft && foundRight) {
+      bothHandsDetected = true;
+    }
+  }
+  
+  if (bothHandsDetected) {
+    webcamStatusDot.classList.add("active");
+  } else {
+    webcamStatusDot.classList.remove("active");
+  }
+
+  // Draw textual feedback on the canvas for debugging and calibration visual cues
+  canvasCtx.fillStyle = "#82dcff";
+  canvasCtx.font = "bold 10px sans-serif";
+  if (foundLeft) {
+    const leftText = `L Open: ${Math.round(leftHandOpenness * 100)}%`;
+    canvasCtx.fillText(leftText, 10, webcamCanvas.height - 15);
+  }
+  if (foundRight) {
+    const rightText = `R Open: ${Math.round(rightHandOpenness * 100)}%`;
+    canvasCtx.fillText(rightText, webcamCanvas.width - 95, webcamCanvas.height - 15);
+  }
+}
+
+function drawHandSkeleton(landmarks: any[]) {
+  if (!canvasCtx || !webcamCanvas) return;
+  
+  const getCanvasCoords = (lm: any) => {
+    return {
+      x: (1 - lm.x) * webcamCanvas.width,
+      y: lm.y * webcamCanvas.height
+    };
+  };
+
+  canvasCtx.fillStyle = "#82dcff";
+  canvasCtx.strokeStyle = "rgba(120, 216, 255, 0.8)";
+  canvasCtx.lineWidth = 2;
+
+  for (const lm of landmarks) {
+    const pt = getCanvasCoords(lm);
+    canvasCtx.beginPath();
+    canvasCtx.arc(pt.x, pt.y, 3, 0, 2 * Math.PI);
+    canvasCtx.fill();
+  }
+
+  const connections = [
+    [0, 1], [1, 2], [2, 3], [3, 4], 
+    [0, 5], [5, 6], [6, 7], [7, 8], 
+    [5, 9], [9, 10], [10, 11], [11, 12], 
+    [9, 13], [13, 14], [14, 15], [15, 16], 
+    [13, 17], [17, 18], [18, 19], [19, 20], 
+    [0, 17] 
+  ];
+
+  for (const conn of connections) {
+    const pt1 = getCanvasCoords(landmarks[conn[0]]);
+    const pt2 = getCanvasCoords(landmarks[conn[1]]);
+    canvasCtx.beginPath();
+    canvasCtx.moveTo(pt1.x, pt1.y);
+    canvasCtx.lineTo(pt2.x, pt2.y);
+    canvasCtx.stroke();
+  }
+}
+
+function updateOnboardingControlsBriefing() {
+  const wasdLayout = document.querySelector<HTMLElement>("#onboarding-wasd-layout");
+  const steerKeyboard = document.querySelector<HTMLElement>("#onboarding-steer-keyboard");
+  const steerHand = document.querySelector<HTMLElement>("#onboarding-steer-hand");
+  
+  const isHandOn = handControlActive;
+  if (wasdLayout) wasdLayout.style.display = isHandOn ? "none" : "";
+  if (steerKeyboard) steerKeyboard.style.display = isHandOn ? "none" : "";
+  if (steerHand) steerHand.style.display = isHandOn ? "" : "none";
+}
+
+async function setHandControl(enabled: boolean) {
+  handControlActive = enabled;
+  localStorage.setItem("paperTrailHandControl", String(enabled));
+  if (handControlToggle) handControlToggle.checked = enabled;
+
+  const canvasEl = document.querySelector<HTMLCanvasElement>(".game-canvas");
+  if (canvasEl) {
+    canvasEl.style.cursor = enabled ? "none" : "";
+  }
+
+  updateOnboardingControlsBriefing();
+
+  if (enabled) {
+    webcamContainer.classList.remove("hidden");
+    
+    if (!canvasCtx && webcamCanvas) {
+      canvasCtx = webcamCanvas.getContext("2d");
+    }
+
+    if (!mediapipeInitialized) {
+      mediapipeInitialized = true;
+      try {
+        const MP = window as any;
+        if (!MP.Hands || !MP.Camera) {
+          console.error("MediaPipe libraries not loaded from CDN.");
+          return;
+        }
+        
+        mpHands = new MP.Hands({
+          locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+        
+        mpHands.setOptions({
+          maxNumHands: 2,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.55,
+          minTrackingConfidence: 0.55
+        });
+        
+        mpHands.onResults(onHandResults);
+        
+        mpCamera = new MP.Camera(webcamVideo, {
+          onFrame: async () => {
+            if (handControlActive) {
+              await mpHands.send({ image: webcamVideo });
+            }
+          },
+          width: 320,
+          height: 240
+        });
+        
+        await mpCamera.start();
+        console.log("MediaPipe Hands initialization completed successfully.");
+      } catch (err) {
+        console.error("Error starting MediaPipe hand tracking:", err);
+      }
+    } else {
+      try {
+        const stream = webcamVideo.srcObject as MediaStream | null;
+        if (!stream) {
+          await mpCamera?.start();
+        }
+      } catch (err) {
+        console.error("Error resuming camera stream:", err);
+      }
+    }
+  } else {
+    webcamContainer.classList.add("hidden");
+    bothHandsDetected = false;
+    if (webcamStatusDot) webcamStatusDot.classList.remove("active");
+    
+    if (webcamVideo.srcObject) {
+      const stream = webcamVideo.srcObject as MediaStream;
+      stream.getTracks().forEach((track) => track.stop());
+      webcamVideo.srcObject = null;
+    }
+    mediapipeInitialized = false;
+    mpCamera = null;
+    mpHands = null;
+  }
+}
 
 // Mouse coordinates (normalized [-1, 1])
 let mouseX = 0;
@@ -1356,9 +1624,45 @@ function updatePlane(delta: number) {
     propeller.rotation.z += delta * spinSpeed;
   }
 
-  // Calculate yaw and pitch steer rates from keyboard and mouse
-  const yawSteer = -horizontal * 1.5 - mouseX * 2.2;
-  const pitchSteer = vertical * 1.3 - mouseY * 1.8;
+  // Calculate yaw and pitch steer rates from keyboard and mouse/hands
+  let yawSteer = 0;
+  let pitchSteer = 0;
+
+  if (handControlActive && bothHandsDetected && leftHandPos && rightHandPos) {
+    // 1. Pitch: Controlled by the average openness of both hands
+    const avgOpenness = (leftHandOpenness + rightHandOpenness) / 2;
+    // Map avgOpenness: 0 (fists) to max nose-down (-1.0), 1 (open) to max nose-up (1.0)
+    const targetPitch = (avgOpenness - 0.5) * 2.0;
+    const rawPitchSteer = THREE.MathUtils.clamp(targetPitch * 1.5, -1.8, 1.8);
+
+    // 2. Roll/Yaw: Controlled by vertical difference between the hands
+    // Right hand higher (rightHandPos.y < leftHandPos.y) -> positive yawSteer (turn/bank left)
+    // Left hand higher (leftHandPos.y < rightHandPos.y) -> negative yawSteer (turn/bank right)
+    const rawYawSteer = THREE.MathUtils.clamp((rightHandPos.y - leftHandPos.y) * 8.0, -2.5, 2.5);
+
+    // 3. Smooth the inputs to eliminate tracker jitter
+    const lerpFactor = 1 - Math.exp(-8 * delta);
+    smoothedYawSteer = THREE.MathUtils.lerp(smoothedYawSteer, rawYawSteer, lerpFactor);
+    smoothedPitchSteer = THREE.MathUtils.lerp(smoothedPitchSteer, rawPitchSteer, lerpFactor);
+
+    yawSteer = smoothedYawSteer;
+    pitchSteer = smoothedPitchSteer;
+  } else {
+    // Decelerate/reset smoothed values to 0 when hands are not tracked
+    const decayFactor = 1 - Math.exp(-12 * delta);
+    smoothedYawSteer = THREE.MathUtils.lerp(smoothedYawSteer, 0, decayFactor);
+    smoothedPitchSteer = THREE.MathUtils.lerp(smoothedPitchSteer, 0, decayFactor);
+
+    if (handControlActive) {
+      // Hand control is active but hands are not currently detected: fly straight/level
+      yawSteer = smoothedYawSteer;
+      pitchSteer = smoothedPitchSteer;
+    } else {
+      // Default flight steering via keyboard & mouse
+      yawSteer = -horizontal * 1.5 - mouseX * 2.2;
+      pitchSteer = vertical * 1.3 - mouseY * 1.8;
+    }
+  }
 
   planeYaw += yawSteer * delta;
   planePitch = THREE.MathUtils.clamp(planePitch + pitchSteer * delta, -Math.PI / 2.2, Math.PI / 2.2);
@@ -1495,7 +1799,7 @@ function updatePlane(delta: number) {
   const crosshairLine = document.querySelector<SVGLineElement>("#crosshair-line");
 
   if (crosshair && crosshairDot && crosshairLine) {
-    if (!isDragging) {
+    if (!isDragging && !handControlActive) {
       crosshair.style.display = "block";
 
       const centerX = window.innerWidth / 2;
@@ -1684,6 +1988,10 @@ portalTransitionToggle.addEventListener("change", () => {
 bobbingAnimationToggle.addEventListener("change", () => {
   enableBobbing = bobbingAnimationToggle.checked;
   localStorage.setItem("enableBobbing", String(enableBobbing));
+});
+
+handControlToggle.addEventListener("change", () => {
+  void setHandControl(handControlToggle.checked);
 });
 
 function populateWorldDropdown() {
@@ -1925,6 +2233,9 @@ async function setupAdminPanel() {
   populateWorldDropdown();
   portalTransitionToggle.checked = enableTransitions;
   bobbingAnimationToggle.checked = enableBobbing;
+  
+  const savedHandControl = localStorage.getItem("paperTrailHandControl") === "true";
+  void setHandControl(savedHandControl);
 
   const controlsHUD = document.querySelector<HTMLElement>(".controls");
   if (controlsHUD) {
@@ -2089,7 +2400,7 @@ type ModelDef = {
 const MODEL_DEFS: ModelDef[] = [
   { name: "dad", label: "Dad", url: "/assets/models/dad-3-d.glb", pos: [-6.25, 0, -14.5], target: 3.4, sit: true, rot: [0, 105, 0], scale: 6.2 },
   { name: "child", label: "Child", url: "/assets/models/child-girl-3d-model.glb", pos: [3, 0, -13.25], target: 2.8, sit: true, rot: [0, -40, 0], scale: 2.86 },
-  { name: "cat", label: "Cat", url: "/assets/models/cat.glb", pos: [2.5, 0, -4], target: 2.2, sit: false },
+  { name: "cat", label: "Cat", url: "/assets/models/cat-walking-model.glb", pos: [2.5, 0, -4], target: 2.2, sit: false },
   { name: "pyramid", label: "Pyramid", url: "/assets/models/pyramid.glb", pos: [3.5, 1.25, -32.5], target: 7.0, sit: false, rot: [0, -20, 0], scale: 7.142 },
 ];
 

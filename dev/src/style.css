@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@700&display=swap');
+
 :root {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: #f7fbff;
@@ -55,8 +57,8 @@ button {
   align-items: center;
   padding: clamp(28px, 6vw, 92px);
   background:
-    linear-gradient(90deg, rgba(4, 11, 22, .96) 0%, rgba(4, 11, 22, .72) 48%, rgba(4, 11, 22, .12) 100%),
-    radial-gradient(circle at 76% 42%, #2b7fa6 0%, #0b263d 29%, #06101d 66%);
+    linear-gradient(90deg, rgba(13, 8, 3, 0.96) 0%, rgba(13, 8, 3, 0.72) 48%, rgba(13, 8, 3, 0.12) 100%),
+    radial-gradient(circle at 76% 42%, #634316 0%, #1e1406 29%, #0d0803 66%);
 }
 
 .intro-glow {
@@ -66,7 +68,7 @@ button {
   right: -16vw;
   top: -22vw;
   border-radius: 50%;
-  background: rgba(114, 218, 255, .14);
+  background: rgba(212, 175, 55, 0.14);
   filter: blur(40px);
 }
 
@@ -85,6 +87,12 @@ button {
   margin-bottom: 18px;
 }
 
+.intro-screen .eyebrow {
+  font-family: 'Cinzel', serif;
+  color: #e6b83c;
+  letter-spacing: .25em;
+}
+
 h1 {
   margin: 0;
   max-width: 800px;
@@ -93,12 +101,25 @@ h1 {
   letter-spacing: -.065em;
 }
 
+.intro-screen h1 {
+  font-family: 'Cinzel Decorative', 'Cinzel', serif;
+  color: #ffd875;
+  text-shadow: 0 0 20px rgba(212, 175, 55, 0.25);
+  letter-spacing: 0.02em;
+}
+
 .intro-copy p {
   max-width: 610px;
   margin: 25px 0 30px;
   color: rgba(255, 255, 255, .72);
   font-size: clamp(16px, 2vw, 21px);
   line-height: 1.6;
+}
+
+.intro-screen .intro-copy p {
+  color: rgba(245, 235, 215, 0.8);
+  font-family: 'Cinzel', serif;
+  font-size: clamp(15px, 1.8vw, 19px);
 }
 
 .primary-button {
@@ -118,6 +139,20 @@ h1 {
   box-shadow: 0 20px 54px rgba(0, 0, 0, .38);
 }
 
+.intro-screen .primary-button {
+  background: linear-gradient(135deg, #ffd875 0%, #e6b83c 100%);
+  color: #171004;
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.intro-screen .primary-button:hover {
+  background: linear-gradient(135deg, #ffe08d 0%, #f4c44d 100%);
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.45);
+}
+
 .intro-footer {
   position: absolute;
   left: clamp(28px, 6vw, 92px);
@@ -128,53 +163,61 @@ h1 {
   letter-spacing: .14em;
 }
 
-.intro-plane {
+.intro-screen .intro-footer {
+  font-family: 'Cinzel', serif;
+  color: rgba(245, 235, 215, 0.42);
+}
+
+.intro-flyer {
   position: absolute;
-  right: 6vw;
+  right: 8vw;
   top: 50%;
-  width: min(48vw, 720px);
-  aspect-ratio: 2/1;
-  transform: translateY(-50%) rotate(-9deg);
-  animation: introFloat 5s ease-in-out infinite;
+  transform: translateY(-50%) rotate(2deg);
+  width: min(34vw, 440px);
+  aspect-ratio: 2/3;
+  border-radius: 16px;
+  background: rgba(13, 8, 3, 0.6);
+  border: 3px solid #e6b83c;
+  box-shadow: 
+    0 30px 60px rgba(0, 0, 0, 0.65),
+    0 0 30px rgba(230, 184, 60, 0.2);
+  overflow: hidden;
+  z-index: 3;
+  animation: flyerFloat 6s ease-in-out infinite;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.plane-art {
-  position: absolute;
-  inset: 10%;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 300'%3E%3Cpath fill='%23f5f8fb' stroke='%23142135' stroke-width='10' stroke-linejoin='round' d='M559 150 334 124 219 33l-51 3 59 102-183-24-25 36 25 36 183-24-59 102 51 3 115-91 225-26Z'/%3E%3Cpath fill='%23e34332' d='m559 150-175-22-22 44 197-22Z'/%3E%3Cellipse cx='334' cy='150' rx='52' ry='20' fill='%2358b8dd'/%3E%3C/svg%3E") center/contain no-repeat;
-  filter: drop-shadow(0 30px 40px rgba(0, 0, 0, .42));
-}
-
-.flight-line {
-  position: absolute;
-  height: 2px;
-  right: 70%;
-  width: 48%;
-  background: linear-gradient(90deg, transparent, rgba(125, 220, 255, .8));
-  box-shadow: 0 0 15px rgba(125, 220, 255, .65);
-}
-
-.flight-line-one {
-  top: 42%;
-}
-
-.flight-line-two {
-  top: 57%;
-  width: 34%;
-  opacity: .55;
-}
-
-@keyframes introFloat {
-  50% {
-    transform: translateY(calc(-50% - 14px)) rotate(-6deg);
+@keyframes flyerFloat {
+  0%, 100% {
+    transform: translateY(-50%) rotate(2deg);
   }
+  50% {
+    transform: translateY(calc(-50% - 15px)) rotate(-1deg);
+  }
+}
+
+.flyer-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.flyer-border-glow {
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 20px rgba(230, 184, 60, 0.5);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .onboarding-screen {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: radial-gradient(circle at center, rgba(28, 87, 118, .92), rgba(4, 11, 22, .98) 62%);
+  background: radial-gradient(circle at center, rgba(99, 67, 22, 0.92), rgba(13, 8, 3, 0.98) 62%);
 }
 
 .onboarding-card {
@@ -182,10 +225,18 @@ h1 {
   padding: clamp(28px, 5vw, 58px);
   border-radius: 30px;
   text-align: center;
-  background: rgba(5, 14, 27, .74);
-  border: 1px solid rgba(255, 255, 255, .14);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, .4);
+  background: rgba(20, 14, 6, 0.85);
+  border: 2px solid #e6b83c;
+  box-shadow: 
+    0 30px 90px rgba(0, 0, 0, 0.7),
+    0 0 30px rgba(230, 184, 60, 0.15);
   backdrop-filter: blur(22px);
+}
+
+.onboarding-card .eyebrow {
+  font-family: 'Cinzel', serif;
+  color: #e6b83c;
+  letter-spacing: .25em;
 }
 
 .onboarding-card h2 {
@@ -194,13 +245,54 @@ h1 {
   font-size: clamp(30px, 5vw, 56px);
   line-height: 1.03;
   letter-spacing: -.045em;
+  font-family: 'Cinzel Decorative', 'Cinzel', serif;
+  color: #ffd875;
+  text-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
 }
 
 .onboarding-card>p {
   max-width: 650px;
   margin: 20px auto 28px;
-  color: rgba(255, 255, 255, .68);
+  color: rgba(245, 235, 215, 0.8);
   line-height: 1.65;
+  font-family: 'Cinzel', serif;
+}
+
+.onboarding-card .keycap {
+  background: rgba(230, 184, 60, 0.08);
+  border: 1px solid rgba(230, 184, 60, 0.45);
+  color: #ffd875;
+  box-shadow: 0 0 10px rgba(230, 184, 60, 0.1);
+  font-family: 'Cinzel', serif;
+}
+
+.onboarding-card .keycap span {
+  color: rgba(245, 235, 215, 0.55);
+}
+
+.onboarding-card .briefing-grid strong {
+  color: #ffd875;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
+}
+
+.onboarding-card .briefing-grid span {
+  color: rgba(245, 235, 215, 0.75);
+  font-family: 'Cinzel', serif;
+}
+
+.onboarding-card .primary-button {
+  background: linear-gradient(135deg, #ffd875 0%, #e6b83c 100%);
+  color: #171004;
+  font-family: 'Cinzel', serif;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.onboarding-card .primary-button:hover {
+  background: linear-gradient(135deg, #ffe08d 0%, #f4c44d 100%);
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.45);
 }
 
 .key-layout {
@@ -1162,4 +1254,74 @@ h1 {
 
 .edit-hud b {
   color: #ffffff;
+}
+
+/* Webcam & Hand Control Widget CSS */
+.webcam-container {
+  position: fixed;
+  top: 120px;
+  left: 22px;
+  width: 220px;
+  height: 165px;
+  background: rgba(10, 24, 44, 0.78);
+  border: 1px solid rgba(120, 216, 255, 0.3);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  z-index: 99;
+  display: flex;
+  flex-direction: column;
+  transition: opacity 0.3s ease;
+}
+
+.webcam-container.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.webcam-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #82dcff;
+  padding: 6px 10px;
+  background: rgba(120, 216, 255, 0.1);
+  border-bottom: 1px solid rgba(120, 216, 255, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.webcam-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff3b30;
+  box-shadow: 0 0 8px #ff3b30;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.webcam-status-dot.active {
+  background: #4cd964;
+  box-shadow: 0 0 8px #4cd964;
+}
+
+.webcam-preview-wrapper {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.webcam-video {
+  display: none;
+}
+
+.webcam-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
 }

@@ -27,11 +27,11 @@ const Uti = (text: string): CaptionLine => ({ speaker: "Uti", text });
 export const CAPTION_SCRIPT: CaptionGroup[] = [
   { audio: "1.mp3", lines: [Dad("Have I ever told you how I met your mother?")] },
   { audio: "2.mp3", lines: [Dad("It began with a cat—a small black cat who stole my breakfast and ran away with an entire fish.")] },
-  { lines: [Uti("You chased a cat over a fish?")] },
-  { lines: [Uti("It was a very good fish.")] },
+  { audio: "3.mp3", lines: [Uti("You chased a cat over a fish?")] },
+  { audio: "4.mp3", lines: [Uti("It was a very good fish.")] },
   { audio: "5.mp3", lines: [Dad("I chased the cat through the market until I tripped over a sandal lying in the road. The sandal flew through the air and landed—plop!—inside a beautiful Egyptian vessel.")] },
   { audio: "6.mp3", lines: [Dad("That vessel belonged to your mother.")] },
-  { lines: [Uti("She was selling pottery?")] },
+  { audio: "7.mp3", lines: [Uti("She was selling pottery?")] },
   {
     audio: "8-11.mp3",
     lines: [
@@ -41,7 +41,7 @@ export const CAPTION_SCRIPT: CaptionGroup[] = [
       Dad("I stumbled through the market with a cat on my head, a vessel on my hand, and only one sandal on my feet."),
     ],
   },
-  { lines: [Uti("Hahahah, you are funny.")] },
+  { audio: "12.mp3", lines: [Uti("Hahahah, you are funny.")] },
   {
     audio: "13-14.mp3",
     lines: [
@@ -49,11 +49,11 @@ export const CAPTION_SCRIPT: CaptionGroup[] = [
       Dad("At the base of the pyramid, I finally tripped and fell into the sand. The vessel slipped safely from my hand, the cat dropped the stolen fish, and your Mother burst out laughing."),
     ],
   },
-  { lines: [Uti("What did you say to her?")] },
+  { audio: "15.mp3", lines: [Uti("What did you say to her?")] },
   { audio: "16.mp3", lines: [Dad("I said, 'Since you already chased me across Egypt, would you like to have dinner?'")] },
-  { lines: [Uti("And she said yes?")] },
+  { audio: "17.mp3", lines: [Uti("And she said yes?")] },
   { audio: "18.mp3", lines: [Dad("Not immediately. First, she made me buy her a new vessel.")] },
-  { lines: [Uti("hahahahah")] },
+  { audio: "19.mp3", lines: [Uti("hahahahah")] },
 ];
 
 /** Comfortable reading time for an unvoiced line, based on word count. */
