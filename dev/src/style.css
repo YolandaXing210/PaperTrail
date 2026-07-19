@@ -416,3 +416,157 @@ h1 { margin:0; max-width:800px; font-size:clamp(48px, 7vw, 104px); line-height:.
   border-bottom: 1px dashed rgba(130, 216, 255, 0.2);
   padding-bottom: 4px;
 }
+
+/* Cinematic video intro, shown between the flight briefing and the world. */
+.video-intro {
+  position: fixed; inset: 0; z-index: 32;
+  background: #000;
+  display: grid; place-items: center;
+  transition: opacity .45s ease, visibility .45s ease;
+}
+.video-intro video {
+  width: 100%; height: 100%; object-fit: contain;
+  background: #000;
+}
+.skip-video-btn {
+  position: absolute; bottom: 30px; right: 30px; z-index: 2;
+  padding: 11px 22px; border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(6, 16, 29, 0.5); color: #fff;
+  font-size: 14px; letter-spacing: 0.04em; font-weight: 600;
+  cursor: pointer; backdrop-filter: blur(6px);
+  transition: background .2s ease, transform .2s ease;
+}
+.skip-video-btn:hover { background: rgba(255, 255, 255, 0.18); transform: translateY(-1px); }
+
+/* Story captions along the bottom of the screen during flight. */
+.caption-view {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(96px, 14vh, 150px);
+  transform: translateX(-50%);
+  width: min(760px, 92vw);
+  z-index: 6;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  transition: opacity 0.4s ease;
+}
+.caption-view.caption-hidden { opacity: 0; }
+.caption-bubble {
+  max-width: 100%;
+  padding: 13px 24px 15px;
+  border-radius: 18px;
+  text-align: center;
+  background: rgba(5, 14, 27, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(14px);
+}
+.caption-speaker {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #82dcff;
+}
+.caption-speaker[data-speaker="dad"] { color: #ffcf8a; }
+.caption-speaker[data-speaker="uti"] { color: #8fe6d2; }
+.caption-text {
+  margin: 0;
+  font-size: clamp(16px, 2.2vw, 22px);
+  line-height: 1.5;
+  color: #f7fbff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
+}
+.caption-in { animation: captionIn 0.42s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes captionIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 850px) {
+  .caption-view { bottom: 132px; width: 94vw; }
+  .caption-bubble { padding: 11px 18px 13px; }
+  .caption-text { font-size: 16px; }
+}
+
+/* --- Scene Objects tab: models, free camera, gizmo --- */
+.admin-hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 8px 0 0;
+  line-height: 1.55;
+}
+.model-select-list,
+.gizmo-mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.model-pick-btn,
+.gizmo-mode-btn {
+  flex: 1 0 auto;
+}
+.active-toggle {
+  background: rgba(120, 216, 255, 0.35) !important;
+  color: #ffffff !important;
+  border-color: #82dcff !important;
+}
+.selected-model-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #82dcff;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.coords-readout {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(120, 216, 255, 0.2);
+  border-radius: 8px;
+  color: #a9e7ff;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow: auto;
+}
+
+/* Floating hint bar shown while free-camera / edit mode is active */
+.edit-hud {
+  display: none;
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 20px;
+  background: rgba(10, 24, 44, 0.82);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(120, 216, 255, 0.35);
+  border-radius: 12px;
+  color: #cdefff;
+  font-size: 12px;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.edit-hud.active {
+  display: flex;
+}
+.edit-hud strong {
+  color: #82dcff;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+}
+.edit-hud b {
+  color: #ffffff;
+}

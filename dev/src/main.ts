@@ -1,7 +1,9 @@
 import "./style.css";
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { SparkRenderer, SplatMesh, SplatFileType } from "@sparkjsdev/spark";
 import { WORLDS, type WorldConfig } from "./worlds";
+import { CAPTION_SCRIPT, CaptionPlayer } from "./captions";
 
 type ExperiencePhase = "intro" | "onboarding" | "loading" | "playing";
 
@@ -123,6 +125,13 @@ app.innerHTML = `
     </div>
   </section>
 
+  <div id="video-intro" class="video-intro hidden-screen">
+    <video id="intro-video" playsinline preload="auto">
+      <source src="/assets/VideoIntro.mp4" type="video/mp4" />
+    </video>
+    <button id="skip-video-btn" class="skip-video-btn">Skip intro ▸</button>
+  </div>
+
   <div id="loader" class="loader hidden">
     <div class="loader-card">
       <div class="loader-ring"></div>
@@ -176,6 +185,12 @@ app.innerHTML = `
         <button class="boost" data-key="ShiftLeft">BOOST</button>
       </div>
     </div>
+    <div id="caption-view" class="caption-view caption-hidden" aria-live="polite">
+      <div class="caption-bubble">
+        <span class="caption-speaker"></span>
+        <p class="caption-text"></p>
+      </div>
+    </div>
   </div>
 
   <div id="admin-panel" class="admin-panel-overlay hidden-panel">
@@ -189,6 +204,7 @@ app.innerHTML = `
       <div class="admin-tabs">
         <button class="tab-btn active-tab" data-tab="tab-upload">Upload & Worlds</button>
         <button class="tab-btn" data-tab="tab-orient" id="tab-btn-orient">Splat Orientation</button>
+        <button class="tab-btn" data-tab="tab-objects" id="tab-btn-objects">Scene Objects</button>
       </div>
       
       <div class="admin-body">
@@ -372,8 +388,65 @@ app.innerHTML = `
              Select a <strong>Custom World</strong> to customize its orientation and settings.
           </div>
         </div>
+
+        <!-- Tab 3: Scene Objects (GLB models, free camera, transform gizmo) -->
+        <div id="tab-objects" class="tab-content hidden-tab-content">
+          <div class="admin-section" style="margin-bottom: 16px;">
+            <h3>Camera</h3>
+            <button id="freecam-toggle-btn" class="admin-btn" style="width:100%; height:44px; display:block; border-radius:999px;">🎥 Free Camera: OFF</button>
+            <p class="admin-hint">Detaches the camera from the airplane. Fly with <b>W A S D</b>, ascend / descend with <b>↑ ↓</b>, turn with <b>← →</b>, hold <b>Shift</b> to move faster, and drag the mouse to look around. Close this panel to roam the scene.</p>
+          </div>
+
+          <div class="admin-section" style="margin-bottom: 16px;">
+            <h3>Placed Models</h3>
+            <div id="model-load-status" class="admin-hint">Models load when the world starts or when Free Camera is enabled.</div>
+            <div id="model-select-list" class="model-select-list"></div>
+            <p class="admin-hint">Pick a model here — or click it directly in the scene — then set its position, rotation, and scale below.</p>
+          </div>
+
+          <div class="admin-section" style="margin-bottom: 16px;">
+            <h3>Transform <span id="selected-model-name" class="selected-model-name">— none selected —</span></h3>
+
+            <div class="form-section-title">Position</div>
+            <div class="form-grid">
+              <div><label>X</label><input type="number" id="model-pos-x" step="0.25" /></div>
+              <div><label>Y</label><input type="number" id="model-pos-y" step="0.25" /></div>
+              <div><label>Z</label><input type="number" id="model-pos-z" step="0.25" /></div>
+            </div>
+
+            <div class="form-section-title">Rotation (degrees)</div>
+            <div class="form-grid">
+              <div><label>X</label><input type="number" id="model-rot-x" step="5" /></div>
+              <div><label>Y</label><input type="number" id="model-rot-y" step="5" /></div>
+              <div><label>Z</label><input type="number" id="model-rot-z" step="5" /></div>
+            </div>
+
+            <div class="form-row-slider" style="margin-top: 12px;">
+              <div class="slider-label-row">
+                <label>Scale</label>
+                <span id="model-scale-label">1.0</span>
+              </div>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="range" id="model-scale-slider" min="0.05" max="20" step="0.05" style="flex: 1;" />
+                <input type="number" id="model-scale" step="0.05" style="width: 72px;" />
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-section">
+            <h3>Coordinates</h3>
+            <button id="copy-coords-btn" class="admin-btn" style="width:100%; height:44px; display:block; border-radius:999px;">📋 Copy Model Coordinates</button>
+            <pre id="coords-readout" class="coords-readout">No models loaded yet.</pre>
+          </div>
+        </div>
       </div>
     </div>
+  </div>
+
+  <div id="edit-hud" class="edit-hud">
+    <strong>EDIT MODE — FREE CAMERA</strong>
+    <span><b>W A S D</b> fly &nbsp;·&nbsp; <b>↑ ↓</b> up / down &nbsp;·&nbsp; <b>← →</b> turn &nbsp;·&nbsp; <b>Shift</b> faster &nbsp;·&nbsp; drag mouse to look</span>
+    <span><b>Click</b> a model or press <b>1–4</b> to select &nbsp;·&nbsp; set position / rotation / scale in the panel &nbsp;·&nbsp; <b>C</b> copy coordinates</span>
   </div>
 `;
 
@@ -387,7 +460,12 @@ const transition = document.querySelector<HTMLDivElement>("#transition")!;
 const transitionName = document.querySelector<HTMLSpanElement>("#transition-name")!;
 
 // Admin panel selectors
-const adminToggleBtns = document.querySelectorAll<HTMLButtonElement>(".admin-btn");
+// Only the "⚙️ Admin" opener buttons (intro / onboarding / HUD) should toggle the
+// panel — not the .admin-btn styled buttons that live inside the panel itself
+// (Save, Free Camera, gizmo modes, model pickers, Copy Coordinates).
+const adminToggleBtns = Array.from(
+  document.querySelectorAll<HTMLButtonElement>(".admin-btn")
+).filter((btn) => !btn.closest("#admin-panel"));
 const adminPanel = document.querySelector<HTMLDivElement>("#admin-panel")!;
 const adminCloseBtn = document.querySelector<HTMLButtonElement>("#admin-close-btn")!;
 const portalTransitionToggle = document.querySelector<HTMLInputElement>("#portal-transition-toggle")!;
@@ -432,6 +510,8 @@ const propMaxZ = document.querySelector<HTMLInputElement>("#prop-max-z")!;
 const savePropertiesBtn = document.querySelector<HTMLButtonElement>("#save-properties-btn")!;
 const deleteWorldBtn = document.querySelector<HTMLButtonElement>("#delete-world-btn")!;
 const gameUi = document.querySelector<HTMLDivElement>("#game-ui")!;
+const captionPlayer = new CaptionPlayer(document.querySelector<HTMLElement>("#caption-view")!);
+let captionsStarted = false;
 const worldName = document.querySelector<HTMLElement>("#world-name")!;
 const worldSubtitle = document.querySelector<HTMLElement>("#world-subtitle")!;
 const speedLabel = document.querySelector<HTMLElement>("#speed")!;
@@ -546,10 +626,50 @@ function create3DAirplane(): THREE.Group {
 }
 
 const plane = new THREE.Group();
-const planeModel = create3DAirplane();
+const planeModel = new THREE.Group();
 plane.add(planeModel);
 plane.visible = false;
 scene.add(plane);
+
+// Show the procedural airplane instantly as a placeholder while the GLB streams in.
+planeModel.add(create3DAirplane());
+
+// Swap in the paper plane GLB once it finishes loading. The loaded model is
+// recentered and normalized inside a pivot group so the per-frame roll/scale
+// animation on `planeModel` keeps working unchanged.
+new GLTFLoader().load(
+  "/assets/paper_plane.glb",
+  (gltf) => {
+    const model = gltf.scene;
+
+    // Recenter geometry at the origin so roll/pitch/yaw pivot about the plane's center.
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    model.position.sub(box.getCenter(new THREE.Vector3()));
+
+    model.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (mesh.isMesh) {
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+      }
+    });
+
+    const pivot = new THREE.Group();
+    pivot.add(model);
+    // Normalize footprint to match the previous airplane (~3.2 units across).
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    pivot.scale.setScalar(3.2 / maxDim);
+    // Model is authored nose->+X, wings along Z. Flight-forward is -Z with wings
+    // along X, so rotate +90deg about Y (nose +X -> -Z, wings +Z -> +X).
+    pivot.rotation.y = Math.PI / 2;
+
+    planeModel.clear(); // drop the placeholder airplane
+    planeModel.add(pivot);
+  },
+  undefined,
+  (err) => console.error("Failed to load paper_plane.glb", err)
+);
 
 const portalGroup = new THREE.Group();
 const portalRing = new THREE.Mesh(
@@ -733,30 +853,58 @@ let isTargetCollected = false;
 
 window.addEventListener("pointerdown", (event) => {
   const target = event.target as HTMLElement;
-  if (target && (target.closest("button") || target.closest(".hud") || target.closest(".mobile-controls") || target.closest("#admin-panel") || target.closest(".admin-tabs"))) {
+  if (target && (target.closest("button") || target.closest(".hud") || target.closest(".mobile-controls") || target.closest("#admin-panel") || target.closest(".admin-tabs") || target.closest("#edit-hud"))) {
     return;
   }
+
+  // In free-camera / edit mode a left click picks the model under the cursor
+  // (which populates the transform fields) instead of starting a look-drag.
+  if (freeCamEnabled && event.button === 0 && modelHolders.size > 0) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    modelPointer.set(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    modelRaycaster.setFromCamera(modelPointer, camera);
+    const hits = modelRaycaster.intersectObjects(Array.from(modelHolders), true);
+    if (hits.length > 0) {
+      const holder = findModelHolder(hits[0].object);
+      const model = sceneModels.find((m) => m.holder === holder) ?? null;
+      if (model) {
+        selectModel(model);
+        return; // don't start a look-drag on this click
+      }
+    }
+  }
+
   isDragging = true;
   prevPointerX = event.clientX;
   prevPointerY = event.clientY;
 });
 
 window.addEventListener("pointermove", (event) => {
-  if (isDragging) {
-    const deltaX = event.clientX - prevPointerX;
-    const deltaY = event.clientY - prevPointerY;
-    prevPointerX = event.clientX;
-    prevPointerY = event.clientY;
+  if (!isDragging) return;
 
-    const adminPanel = document.querySelector("#admin-panel");
-    const isAdminPanelOpen = adminPanel && !adminPanel.classList.contains("hidden-panel");
-    if (isAdminPanelOpen) {
-      adminOrbitYaw -= deltaX * 0.006;
-      adminOrbitPitch = THREE.MathUtils.clamp(adminOrbitPitch - deltaY * 0.006, -Math.PI / 2.1, Math.PI / 2.1);
-    } else {
-      orbitYaw -= deltaX * 0.004;
-      orbitPitch = THREE.MathUtils.clamp(orbitPitch - deltaY * 0.004, -Math.PI / 3.2, Math.PI / 3.2);
-    }
+  const deltaX = event.clientX - prevPointerX;
+  const deltaY = event.clientY - prevPointerY;
+  prevPointerX = event.clientX;
+  prevPointerY = event.clientY;
+
+  // Free-camera look: drag rotates the detached camera's yaw / pitch.
+  if (freeCamEnabled) {
+    freeCam.yaw -= deltaX * 0.005;
+    freeCam.pitch = THREE.MathUtils.clamp(freeCam.pitch - deltaY * 0.005, -1.4, 1.4);
+    return;
+  }
+
+  const adminPanel = document.querySelector("#admin-panel");
+  const isAdminPanelOpen = adminPanel && !adminPanel.classList.contains("hidden-panel");
+  if (isAdminPanelOpen) {
+    adminOrbitYaw -= deltaX * 0.006;
+    adminOrbitPitch = THREE.MathUtils.clamp(adminOrbitPitch - deltaY * 0.006, -Math.PI / 2.1, Math.PI / 2.1);
+  } else {
+    orbitYaw -= deltaX * 0.004;
+    orbitPitch = THREE.MathUtils.clamp(orbitPitch - deltaY * 0.004, -Math.PI / 3.2, Math.PI / 3.2);
   }
 });
 
@@ -894,6 +1042,16 @@ async function startAdventure() {
   gameUi.classList.remove("hidden-ui");
   loader.classList.add("hidden");
   phase = "playing";
+
+  // Roll the Dad/Uti story captions along the bottom of the screen, once, as
+  // the flight begins. Voiced lines sync to their audio; the rest read at pace.
+  if (!captionsStarted) {
+    captionsStarted = true;
+    void captionPlayer.play(CAPTION_SCRIPT);
+  }
+
+  // Populate the world with the placed GLB models (dad, child, cat, pyramid).
+  void loadSceneModels();
 
   if (enableTransitions && activeWorldId === "world-one") {
     void preloadSecondWorld();
@@ -1156,11 +1314,49 @@ continueButton.addEventListener("click", () => {
   intro.classList.add("hidden-screen");
   onboarding.classList.remove("hidden-screen");
 });
-startButton.addEventListener("click", () => void startAdventure());
+// Video intro: plays after the flight-briefing "direction" page and before the world loads.
+const videoIntro = document.querySelector<HTMLDivElement>("#video-intro")!;
+const introVideo = document.querySelector<HTMLVideoElement>("#intro-video")!;
+const skipVideoBtn = document.querySelector<HTMLButtonElement>("#skip-video-btn")!;
+let videoIntroDone = false;
+
+function finishVideoIntro() {
+  if (videoIntroDone) return;
+  videoIntroDone = true;
+  introVideo.pause();
+  videoIntro.classList.add("hidden-screen");
+  void startAdventure();
+}
+
+introVideo.addEventListener("ended", finishVideoIntro);
+skipVideoBtn.addEventListener("click", finishVideoIntro);
+// Fail-safe: if the video errors while it's on screen, don't strand the user — go to the world.
+introVideo.addEventListener("error", () => {
+  if (!videoIntro.classList.contains("hidden-screen")) finishVideoIntro();
+});
+
+startButton.addEventListener("click", () => {
+  if (phase !== "onboarding") return;
+  videoIntroDone = false;
+  onboarding.classList.add("hidden-screen");
+  videoIntro.classList.remove("hidden-screen");
+  introVideo.currentTime = 0;
+  // The click is a user gesture, so playback with audio is allowed here.
+  const playAttempt = introVideo.play();
+  if (playAttempt) playAttempt.catch(() => finishVideoIntro()); // autoplay/load blocked -> skip
+});
 
 renderer.setAnimationLoop(() => {
   const delta = Math.min(clock.getDelta(), 0.04);
-  updatePlane(delta);
+
+  // Advance the sit animations (dad / child) and any other model clips.
+  for (const model of sceneModels) model.mixer?.update(delta);
+
+  if (freeCamEnabled) {
+    updateFreeCamera(delta);
+  } else {
+    updatePlane(delta);
+  }
   if (enableTransitions) {
     portalRing.rotation.z += delta * 0.45;
     portalCore.rotation.z -= delta * 0.2;
@@ -1580,5 +1776,346 @@ propObjScale.addEventListener("input", () => {
 propObjX.addEventListener("input", updateSplatRealtime);
 propObjY.addEventListener("input", updateSplatRealtime);
 propObjZ.addEventListener("input", updateSplatRealtime);
+
+// ============================================================
+// Scene Objects — GLB models, free-fly camera, and transform gizmo.
+// Loads the cat / child / dad / pyramid models, lets you fly a detached
+// camera to inspect them, drag a gizmo to place them, and copy the
+// resulting coordinates to the clipboard.
+// ============================================================
+
+type SceneModel = {
+  name: string;
+  label: string;
+  holder: THREE.Group;
+  mixer: THREE.AnimationMixer | null;
+};
+
+type ModelDef = {
+  name: string;
+  label: string;
+  url: string;
+  pos: [number, number, number];
+  target: number; // normalized max dimension, in world units
+  sit: boolean;
+};
+
+const MODEL_DEFS: ModelDef[] = [
+  { name: "dad",     label: "Dad",     url: "/assets/models/dad.glb",     pos: [-4.5, 0, -5], target: 3.4, sit: true },
+  { name: "child",   label: "Child",   url: "/assets/models/child.glb",   pos: [-2, 0, -5],   target: 2.8, sit: true },
+  { name: "cat",     label: "Cat",     url: "/assets/models/cat.glb",     pos: [2.5, 0, -4],  target: 2.2, sit: false },
+  { name: "pyramid", label: "Pyramid", url: "/assets/models/pyramid.glb", pos: [0, 0, -12],   target: 7.0, sit: false },
+];
+
+const sceneModels: SceneModel[] = [];
+const modelHolders = new Set<THREE.Object3D>();
+const modelLoader = new GLTFLoader();
+const modelRaycaster = new THREE.Raycaster();
+const modelPointer = new THREE.Vector2();
+let modelsLoadRequested = false;
+let selectedModel: SceneModel | null = null;
+
+// Scene Objects tab controls
+const freeCamToggleBtn = document.querySelector<HTMLButtonElement>("#freecam-toggle-btn");
+const modelPosX = document.querySelector<HTMLInputElement>("#model-pos-x");
+const modelPosY = document.querySelector<HTMLInputElement>("#model-pos-y");
+const modelPosZ = document.querySelector<HTMLInputElement>("#model-pos-z");
+const modelRotX = document.querySelector<HTMLInputElement>("#model-rot-x");
+const modelRotY = document.querySelector<HTMLInputElement>("#model-rot-y");
+const modelRotZ = document.querySelector<HTMLInputElement>("#model-rot-z");
+const modelScaleInput = document.querySelector<HTMLInputElement>("#model-scale");
+const modelScaleSlider = document.querySelector<HTMLInputElement>("#model-scale-slider");
+const modelScaleLabel = document.querySelector<HTMLSpanElement>("#model-scale-label");
+const selectedModelName = document.querySelector<HTMLSpanElement>("#selected-model-name");
+const modelSelectList = document.querySelector<HTMLDivElement>("#model-select-list");
+const copyCoordsBtn = document.querySelector<HTMLButtonElement>("#copy-coords-btn");
+const coordsReadout = document.querySelector<HTMLPreElement>("#coords-readout");
+const modelLoadStatus = document.querySelector<HTMLDivElement>("#model-load-status");
+const editHud = document.querySelector<HTMLDivElement>("#edit-hud");
+
+function findModelHolder(obj: THREE.Object3D | null): THREE.Object3D | null {
+  let current: THREE.Object3D | null = obj;
+  while (current) {
+    if (modelHolders.has(current)) return current;
+    current = current.parent;
+  }
+  return null;
+}
+
+function setModelStatus(msg: string) {
+  if (modelLoadStatus) modelLoadStatus.textContent = msg;
+}
+
+async function loadSceneModels() {
+  if (modelsLoadRequested) return;
+  modelsLoadRequested = true;
+  setModelStatus("Loading scene models… these are large files, please wait.");
+
+  for (const def of MODEL_DEFS) {
+    try {
+      setModelStatus(`Loading ${def.label}…`);
+      const gltf = await modelLoader.loadAsync(def.url);
+      const root = gltf.scene;
+
+      // Recenter on the bounding-box center and normalize the size so every
+      // model is visible regardless of its native scale/units.
+      const box = new THREE.Box3().setFromObject(root);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      root.position.sub(center);
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
+
+      const holder = new THREE.Group();
+      holder.name = `model-${def.name}`;
+      holder.add(root);
+      holder.position.set(...def.pos);
+      holder.scale.setScalar(def.target / maxDim);
+      scene.add(holder);
+      modelHolders.add(holder);
+
+      // Dad and child ship with a single "sit" clip (Blender exports it as
+      // "NlaTrack"); play it. Others have no animation.
+      let mixer: THREE.AnimationMixer | null = null;
+      if (def.sit && gltf.animations.length > 0) {
+        mixer = new THREE.AnimationMixer(root);
+        const sitClip = gltf.animations.find((c) => /sit/i.test(c.name)) ?? gltf.animations[0];
+        mixer.clipAction(sitClip).play();
+      }
+
+      sceneModels.push({ name: def.name, label: def.label, holder, mixer });
+      refreshModelButtons();
+      updateCoordsReadout();
+    } catch (err) {
+      console.error(`Failed to load model "${def.name}"`, err);
+      setModelStatus(`Failed to load ${def.label} (see console).`);
+    }
+  }
+  setModelStatus(`Loaded ${sceneModels.length} / ${MODEL_DEFS.length} models. Click one to edit.`);
+}
+
+function refreshModelButtons() {
+  if (!modelSelectList) return;
+  modelSelectList.innerHTML = "";
+  for (const model of sceneModels) {
+    const btn = document.createElement("button");
+    btn.className = "admin-btn model-pick-btn" + (selectedModel === model ? " active-toggle" : "");
+    btn.textContent = model.label;
+    btn.addEventListener("click", () => selectModel(selectedModel === model ? null : model));
+    modelSelectList.appendChild(btn);
+  }
+}
+
+function selectModel(model: SceneModel | null) {
+  selectedModel = model;
+  populateTransformFields();
+  refreshModelButtons();
+  updateCoordsReadout();
+}
+
+// Fill the panel's numeric fields from the selected model's current transform.
+function populateTransformFields() {
+  const m = selectedModel;
+  if (selectedModelName) selectedModelName.textContent = m ? m.label : "— none selected —";
+
+  if (!m) {
+    for (const el of [modelPosX, modelPosY, modelPosZ, modelRotX, modelRotY, modelRotZ, modelScaleInput, modelScaleSlider]) {
+      if (el) el.value = "";
+    }
+    if (modelScaleLabel) modelScaleLabel.textContent = "—";
+    return;
+  }
+
+  const setVal = (el: HTMLInputElement | null, v: number) => { if (el) el.value = String(round(v, 3)); };
+  setVal(modelPosX, m.holder.position.x);
+  setVal(modelPosY, m.holder.position.y);
+  setVal(modelPosZ, m.holder.position.z);
+  setVal(modelRotX, THREE.MathUtils.radToDeg(m.holder.rotation.x));
+  setVal(modelRotY, THREE.MathUtils.radToDeg(m.holder.rotation.y));
+  setVal(modelRotZ, THREE.MathUtils.radToDeg(m.holder.rotation.z));
+  setVal(modelScaleInput, m.holder.scale.x);
+  setVal(modelScaleSlider, m.holder.scale.x);
+  if (modelScaleLabel) modelScaleLabel.textContent = String(round(m.holder.scale.x, 3));
+}
+
+// Apply the panel's numeric fields onto the selected model.
+function applyTransformFromFields() {
+  const m = selectedModel;
+  if (!m) return;
+  const num = (el: HTMLInputElement | null, fallback: number) => {
+    const v = el ? parseFloat(el.value) : NaN;
+    return Number.isFinite(v) ? v : fallback;
+  };
+  m.holder.position.set(
+    num(modelPosX, m.holder.position.x),
+    num(modelPosY, m.holder.position.y),
+    num(modelPosZ, m.holder.position.z)
+  );
+  m.holder.rotation.set(
+    THREE.MathUtils.degToRad(num(modelRotX, 0)),
+    THREE.MathUtils.degToRad(num(modelRotY, 0)),
+    THREE.MathUtils.degToRad(num(modelRotZ, 0))
+  );
+  const s = num(modelScaleInput, m.holder.scale.x);
+  if (s > 0) m.holder.scale.setScalar(s);
+  updateCoordsReadout();
+}
+
+// --- Coordinate reporting ---
+function round(v: number, p = 2): number {
+  const f = 10 ** p;
+  return Math.round(v * f) / f;
+}
+
+function buildCoordsText(): string {
+  if (sceneModels.length === 0) return "No models loaded yet.";
+  const deg = (v: number) => round(THREE.MathUtils.radToDeg(v), 1);
+  const lines = sceneModels.map((m) => {
+    const p = m.holder.position;
+    const r = m.holder.rotation;
+    const s = m.holder.scale;
+    return `${m.name.padEnd(8)} pos [${round(p.x)}, ${round(p.y)}, ${round(p.z)}]  rotDeg [${deg(r.x)}, ${deg(r.y)}, ${deg(r.z)}]  scale [${round(s.x, 3)}, ${round(s.y, 3)}, ${round(s.z, 3)}]`;
+  });
+  const obj: Record<string, unknown> = {};
+  for (const m of sceneModels) {
+    obj[m.name] = {
+      position: [round(m.holder.position.x, 3), round(m.holder.position.y, 3), round(m.holder.position.z, 3)],
+      rotationDeg: [deg(m.holder.rotation.x), deg(m.holder.rotation.y), deg(m.holder.rotation.z)],
+      scale: [round(m.holder.scale.x, 4), round(m.holder.scale.y, 4), round(m.holder.scale.z, 4)],
+    };
+  }
+  return (
+    "PaperTrail — scene model transforms\n" +
+    "(each model is auto-centered on its bounding box, then this transform is applied)\n\n" +
+    lines.join("\n") +
+    "\n\nJSON:\n" +
+    JSON.stringify(obj, null, 2)
+  );
+}
+
+function updateCoordsReadout() {
+  if (coordsReadout) coordsReadout.textContent = buildCoordsText();
+}
+
+async function copyCoords() {
+  const text = buildCoordsText();
+  const flash = (msg: string) => {
+    if (!copyCoordsBtn) return;
+    const original = copyCoordsBtn.textContent;
+    copyCoordsBtn.textContent = msg;
+    setTimeout(() => { copyCoordsBtn.textContent = original; }, 1600);
+  };
+  try {
+    await navigator.clipboard.writeText(text);
+    flash("✅ Copied to clipboard!");
+  } catch {
+    // Fallback for contexts without the async clipboard API.
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch { ok = false; }
+    document.body.removeChild(ta);
+    flash(ok ? "✅ Copied!" : "Copy failed — select the text below");
+  }
+}
+
+// --- Free-fly camera ---
+let freeCamEnabled = false;
+const freeCam = {
+  position: new THREE.Vector3(0, 3, 12),
+  yaw: Math.PI,
+  pitch: 0,
+};
+
+function setFreeCam(enabled: boolean) {
+  freeCamEnabled = enabled;
+  if (freeCamToggleBtn) {
+    freeCamToggleBtn.textContent = enabled ? "🎥 Free Camera: ON" : "🎥 Free Camera: OFF";
+    freeCamToggleBtn.classList.toggle("active-toggle", enabled);
+  }
+  editHud?.classList.toggle("active", enabled);
+
+  if (enabled) {
+    // Seed the free camera from wherever the follow camera currently is.
+    freeCam.position.copy(camera.position);
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    freeCam.pitch = Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1));
+    freeCam.yaw = Math.atan2(-dir.x, -dir.z);
+    void loadSceneModels();
+  } else {
+    selectModel(null);
+  }
+}
+
+function updateFreeCamera(delta: number) {
+  spawnHelper.visible = false;
+  const crosshair = document.querySelector<HTMLElement>("#flight-crosshair");
+  if (crosshair) crosshair.style.display = "none";
+
+  const boost = keys.has("ShiftLeft") || keys.has("ShiftRight");
+  const speed = (boost ? 26 : 10) * delta;
+  const turn = 1.6 * delta;
+
+  if (keys.has("ArrowLeft")) freeCam.yaw += turn;
+  if (keys.has("ArrowRight")) freeCam.yaw -= turn;
+
+  camera.quaternion.setFromEuler(new THREE.Euler(freeCam.pitch, freeCam.yaw, 0, "YXZ"));
+
+  const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+  const move = new THREE.Vector3();
+  if (keys.has("KeyW")) move.add(forward);
+  if (keys.has("KeyS")) move.sub(forward);
+  if (keys.has("KeyD")) move.add(right);
+  if (keys.has("KeyA")) move.sub(right);
+  if (keys.has("ArrowUp")) move.y += 1;
+  if (keys.has("ArrowDown")) move.y -= 1;
+  if (move.lengthSq() > 0) {
+    move.normalize().multiplyScalar(speed);
+    freeCam.position.add(move);
+  }
+  camera.position.copy(freeCam.position);
+
+  if (objectTargetGroup.visible) objectTargetGroup.rotation.y += delta * 0.8;
+}
+
+// --- Wire up the Scene Objects controls ---
+freeCamToggleBtn?.addEventListener("click", () => setFreeCam(!freeCamEnabled));
+copyCoordsBtn?.addEventListener("click", () => void copyCoords());
+
+// Live-apply the numeric position / rotation fields to the selected model.
+for (const el of [modelPosX, modelPosY, modelPosZ, modelRotX, modelRotY, modelRotZ]) {
+  el?.addEventListener("input", applyTransformFromFields);
+}
+// Keep the scale number box and slider in sync, and apply live.
+modelScaleInput?.addEventListener("input", () => {
+  if (modelScaleSlider) modelScaleSlider.value = modelScaleInput.value;
+  if (modelScaleLabel) modelScaleLabel.textContent = String(parseFloat(modelScaleInput.value) || 0);
+  applyTransformFromFields();
+});
+modelScaleSlider?.addEventListener("input", () => {
+  if (modelScaleInput) modelScaleInput.value = modelScaleSlider.value;
+  if (modelScaleLabel) modelScaleLabel.textContent = String(parseFloat(modelScaleSlider.value) || 0);
+  applyTransformFromFields();
+});
+
+// Keyboard shortcuts, active only while free-camera / edit mode is on.
+window.addEventListener("keydown", (event) => {
+  if (!freeCamEnabled) return;
+  const tag = (event.target as HTMLElement | null)?.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  switch (event.code) {
+    case "KeyC": void copyCoords(); break;
+    case "Digit1": selectModel(sceneModels[0] ?? null); break;
+    case "Digit2": selectModel(sceneModels[1] ?? null); break;
+    case "Digit3": selectModel(sceneModels[2] ?? null); break;
+    case "Digit4": selectModel(sceneModels[3] ?? null); break;
+    default: break;
+  }
+});
 
 void setupAdminPanel();

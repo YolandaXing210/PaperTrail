@@ -1,0 +1,42 @@
+- generic [ref=f1e2]:
+  - generic:
+    - generic:
+      - button "⚙️ Admin"
+    - generic:
+      - generic: Flight briefing
+      - heading "Your adventure begins in the first memory world." [level=2]
+      - paragraph: Steer through the environment, explore its details, and fly into the luminous portal to cross into the next culture.
+      - generic:
+        - generic "WASD controls":
+          - generic:
+            - text: W
+            - generic: Up
+          - generic:
+            - text: A
+            - generic: Left
+          - generic:
+            - text: S
+            - generic: Down
+          - generic:
+            - text: D
+            - generic: Right
+        - generic:
+          - generic:
+            - text: Space Bar
+            - generic: Thrust
+          - generic:
+            - text: Shift
+            - generic: Boost
+      - generic:
+        - generic:
+          - strong: Thrust
+          - generic: Hold Space to fly forward.
+        - generic:
+          - strong: Steer
+          - generic: Use WASD or Arrow keys to guide.
+        - generic:
+          - strong: Transition
+          - generic: Enter the portal to reach world two.
+      - button "Start adventure" [active]
+  - button "Skip intro ▸" [ref=f1e55] [cursor=pointer]
+  - option "Elephants TRavels (Default)" [selected]

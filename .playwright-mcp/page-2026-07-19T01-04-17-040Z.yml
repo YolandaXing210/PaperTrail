@@ -1,0 +1,16 @@
+- generic [ref=f6e2]:
+  - generic [ref=f6e4]:
+    - button "⚙️ Admin" [ref=f6e6] [cursor=pointer]
+    - generic [ref=f6e12]:
+      - generic [ref=f6e13]: A Gaussian Splat Adventure
+      - heading "Fly across worlds built from memories." [level=1] [ref=f6e14]: Fly across worldsbuilt from memories.
+      - paragraph [ref=f6e15]: Guide a tiny airplane through ancient Chinese and Japanese-inspired spaces reconstructed as Gaussian splats.
+      - button "Continue" [ref=f6e16] [cursor=pointer]
+    - generic [ref=f6e17]: Two worlds · One continuous flight
+  - button "Upload & Worlds"
+  - button "Splat Orientation"
+  - button "Scene Objects"
+  - generic:
+    - strong: EDIT MODE — FREE CAMERA
+    - generic: W A S D fly · ↑ ↓ up / down · ← → turn · Shift faster · drag mouse to look
+    - generic: Click a model to select · T move / R rotate / Y scale · 1–4 pick model · C copy coordinates

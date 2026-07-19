@@ -1,0 +1,10 @@
+[   42010ms] [LOG] Loaded 714071 splats. Starting Tiny LoD build... @ blob:http://localhost:5173/f00f5f8f-1caa-437b-bfa1-ceef3415aa5a:1138
+[   43611ms] [LOG] Tiny LoD: 714071 -> 1080360 (1600.6999999284744 ms) @ blob:http://localhost:5173/f00f5f8f-1caa-437b-bfa1-ceef3415aa5a:1150
+[ 1475198ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:864
+[ 1484073ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:864
+[ 1651737ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:864
+[ 6165870ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:864
+[ 6178809ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:864
+[ 9056028ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:864
+[ 9106062ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:864
+[ 9154862ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:864

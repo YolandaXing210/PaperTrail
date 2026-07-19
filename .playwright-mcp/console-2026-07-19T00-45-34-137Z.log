@@ -1,0 +1,9 @@
+[     956ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5173/favicon.ico:0
+[   26509ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5173/favicon.ico:0
+[   41301ms] [LOG] Loaded 714071 splats. Starting Tiny LoD build... @ blob:http://localhost:5173/21a51db6-1970-4f68-9c11-56cf2136ae08:1138
+[   42809ms] [LOG] Tiny LoD: 714071 -> 1080360 (1508.1000000238419 ms) @ blob:http://localhost:5173/21a51db6-1970-4f68-9c11-56cf2136ae08:1150
+[   43024ms] TypeError: Cannot read properties of undefined (reading 'splatUrl')
+    at getSplatUrlForWorld (http://localhost:5173/src/main.ts?t=1784421856683:678:16)
+    at createSplat (http://localhost:5173/src/main.ts?t=1784421856683:757:15)
+    at preloadSecondWorld (http://localhost:5173/src/main.ts?t=1784421856683:775:17)
+    at startAdventure (http://localhost:5173/src/main.ts?t=1784421856683:840:10)

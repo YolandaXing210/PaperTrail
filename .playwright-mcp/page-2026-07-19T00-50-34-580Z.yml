@@ -1,0 +1,10 @@
+- generic [ref=f3e2]:
+  - generic [ref=f3e4]:
+    - button "⚙️ Admin" [ref=f3e6] [cursor=pointer]
+    - generic [ref=f3e12]:
+      - generic [ref=f3e13]: A Gaussian Splat Adventure
+      - heading "Fly across worlds built from memories." [level=1] [ref=f3e14]: Fly across worldsbuilt from memories.
+      - paragraph [ref=f3e15]: Guide a tiny airplane through ancient Chinese and Japanese-inspired spaces reconstructed as Gaussian splats.
+      - button "Continue" [ref=f3e16] [cursor=pointer]
+    - generic [ref=f3e17]: Two worlds · One continuous flight
+  - option "Elephants TRavels (Default)" [selected]

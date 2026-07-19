@@ -1,0 +1,49 @@
+- generic [ref=e2]:
+  - generic:
+    - generic:
+      - button "⚙️ Admin"
+    - generic:
+      - generic: A Gaussian Splat Adventure
+      - heading "Fly across worlds built from memories." [level=1]: Fly across worldsbuilt from memories.
+      - paragraph: Guide a tiny airplane through ancient Chinese and Japanese-inspired spaces reconstructed as Gaussian splats.
+      - button "Continue" [active]
+    - generic: Two worlds · One continuous flight
+  - generic [ref=e18]:
+    - button "⚙️ Admin" [ref=e20] [cursor=pointer]
+    - generic [ref=e21]:
+      - generic [ref=e22]: Flight briefing
+      - heading "Your adventure begins in the first memory world." [level=2] [ref=e23]
+      - paragraph [ref=e24]: Steer through the environment, explore its details, and fly into the luminous portal to cross into the next culture.
+      - generic [ref=e25]:
+        - generic "WASD controls" [ref=e26]:
+          - generic [ref=e28]:
+            - text: W
+            - generic [ref=e29]: Up
+          - generic [ref=e31]:
+            - text: A
+            - generic [ref=e32]: Left
+          - generic [ref=e33]:
+            - text: S
+            - generic [ref=e34]: Down
+          - generic [ref=e35]:
+            - text: D
+            - generic [ref=e36]: Right
+        - generic [ref=e37]:
+          - generic [ref=e38]:
+            - text: Space Bar
+            - generic [ref=e39]: Thrust
+          - generic [ref=e40]:
+            - text: Shift
+            - generic [ref=e41]: Boost
+      - generic [ref=e42]:
+        - generic [ref=e43]:
+          - strong [ref=e44]: Thrust
+          - generic [ref=e45]: Hold Space to fly forward.
+        - generic [ref=e46]:
+          - strong [ref=e47]: Steer
+          - generic [ref=e48]: Use WASD or Arrow keys to guide.
+        - generic [ref=e49]:
+          - strong [ref=e50]: Transition
+          - generic [ref=e51]: Enter the portal to reach world two.
+      - button "Start adventure" [ref=e52] [cursor=pointer]
+  - option "Elephants TRavels (Default)" [selected]

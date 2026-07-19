@@ -1,0 +1,36 @@
+- generic [ref=f6e2]:
+  - generic [ref=f6e4]:
+    - button "⚙️ Admin" [ref=f6e6] [cursor=pointer]
+    - generic [ref=f6e12]:
+      - generic [ref=f6e13]: A Gaussian Splat Adventure
+      - heading "Fly across worlds built from memories." [level=1] [ref=f6e14]: Fly across worldsbuilt from memories.
+      - paragraph [ref=f6e15]: Guide a tiny airplane through ancient Chinese and Japanese-inspired spaces reconstructed as Gaussian splats.
+      - button "Continue" [ref=f6e16] [cursor=pointer]
+    - generic [ref=f6e17]: Two worlds · One continuous flight
+  - generic [ref=f6e19]:
+    - generic [ref=f6e20]:
+      - heading "Admin Control Center" [level=2] [ref=f6e21]
+      - button "×" [ref=f6e22] [cursor=pointer]
+    - generic [ref=f6e23]:
+      - button "Upload & Worlds" [ref=f6e24] [cursor=pointer]
+      - button "Splat Orientation" [ref=f6e25] [cursor=pointer]
+      - button "Scene Objects" [active] [ref=f6e26] [cursor=pointer]
+    - generic [ref=f6e42]:
+      - generic [ref=f6e43]:
+        - heading "Camera" [level=3] [ref=f6e44]
+        - 'button "🎥 Free Camera: OFF" [ref=f6e45] [cursor=pointer]'
+        - paragraph [ref=f6e46]: Detaches the camera from the airplane. Fly with W A S D, ascend / descend with ↑ ↓, turn with ← →, hold Shift to move faster, and drag the mouse to look around. Close this panel to roam the scene.
+      - generic [ref=f6e47]:
+        - heading "Placed Models" [level=3] [ref=f6e48]
+        - generic [ref=f6e49]: Models load when the world starts or when Free Camera is enabled.
+        - paragraph [ref=f6e50]: Pick a model here — or click it directly in the scene — to attach the move / rotate / scale gizmo.
+      - generic [ref=f6e51]:
+        - heading "Gizmo Mode" [level=3] [ref=f6e52]
+        - generic [ref=f6e53]:
+          - button "Move (T)" [ref=f6e54] [cursor=pointer]
+          - button "Rotate (R)" [ref=f6e55] [cursor=pointer]
+          - button "Scale (Y)" [ref=f6e56] [cursor=pointer]
+      - generic [ref=f6e57]:
+        - heading "Coordinates" [level=3] [ref=f6e58]
+        - button "📋 Copy Model Coordinates" [ref=f6e59] [cursor=pointer]
+        - generic [ref=f6e60]: No models loaded yet.
