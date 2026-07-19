@@ -15,6 +15,7 @@ export type WorldConfig = {
   };
   objectPos?: [number, number, number];
   objectScale?: number;
+  colliderUrl?: string;
 };
 
 export const WORLDS: WorldConfig[] = [

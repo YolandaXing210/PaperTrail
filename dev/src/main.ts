@@ -248,6 +248,15 @@ app.innerHTML = `
               <input type="text" id="prop-name" />
             </div>
 
+            <!-- Mesh Collider Dropdown -->
+            <div class="form-row">
+              <label>Mesh Collider</label>
+              <select id="prop-collider" class="admin-select">
+                <option value="">None</option>
+                <option value="/assets/worlds/Ancient Egyptian Desert Palace_collider.glb">Ancient Egyptian Desert Palace Collider</option>
+              </select>
+            </div>
+
             <!-- Position Offset (Translate Splat) -->
             <div class="form-section-title">Splat Position Offset</div>
             <div class="form-grid">
@@ -490,6 +499,7 @@ const customWorldProperties = document.querySelector<HTMLDivElement>("#custom-wo
 const orientFallbackMsg = document.querySelector<HTMLDivElement>("#orient-fallback-msg")!;
 
 const propName = document.querySelector<HTMLInputElement>("#prop-name")!;
+const propCollider = document.querySelector<HTMLSelectElement>("#prop-collider")!;
 const propScale = document.querySelector<HTMLInputElement>("#prop-scale")!;
 const propScaleSlider = document.querySelector<HTMLInputElement>("#prop-scale-slider")!;
 const labelScale = document.querySelector<HTMLSpanElement>("#label-scale")!;
@@ -949,6 +959,16 @@ let worldOnePreloadPromise: Promise<SplatMesh> | null = null;
 let worldOneLoadProgress = 0;
 let worldOnePreloadedId: string | null = null;
 let isTransitioning = false;
+let activeColliderMesh: THREE.Group | null = null;
+const colliderGroup = new THREE.Group();
+scene.add(colliderGroup);
+
+const colliderMaterial = new THREE.MeshBasicMaterial({
+  color: 0xffff00,
+  wireframe: true,
+  transparent: true,
+  opacity: 0.45
+});
 const velocity = new THREE.Vector3();
 const desiredVelocity = new THREE.Vector3();
 const cameraTarget = new THREE.Vector3();
@@ -1049,6 +1069,59 @@ async function preloadSecondWorld() {
   try { await preloadPromise; } catch (error) { console.warn("Background preload failed", error); }
 }
 
+function loadCollider(url: string) {
+  // Clear old collider group children
+  while (colliderGroup.children.length > 0) {
+    const child = colliderGroup.children[0];
+    colliderGroup.remove(child);
+  }
+  activeColliderMesh = null;
+
+  if (!url) {
+    console.log("No collider URL defined for this world.");
+    return;
+  }
+
+  console.log("Loading mesh collider from:", url);
+  const loader = new GLTFLoader();
+  loader.load(
+    url,
+    (gltf) => {
+      const model = gltf.scene;
+      
+      // Override material to yellow wireframe
+      model.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh;
+          mesh.material = colliderMaterial;
+        }
+      });
+
+      activeColliderMesh = model;
+      colliderGroup.add(model);
+
+      // Match splat scale, rotation, and position
+      const world = getCurrentWorldConfig(activeWorldId);
+      if (world) {
+        colliderGroup.position.set(...world.position);
+        colliderGroup.rotation.set(...world.rotation);
+        colliderGroup.scale.setScalar(world.scale);
+      }
+
+      // Update material visibility based on admin panel open state
+      const adminPanel = document.querySelector("#admin-panel");
+      const isAdminPanelOpen = adminPanel && !adminPanel.classList.contains("hidden-panel");
+      colliderMaterial.visible = !!isAdminPanelOpen;
+      
+      console.log("Mesh collider loaded successfully!");
+    },
+    undefined,
+    (err) => {
+      console.error("Failed to load mesh collider GLB:", err);
+    }
+  );
+}
+
 async function startAdventure() {
   if (phase !== "onboarding") return;
   phase = "loading";
@@ -1109,6 +1182,7 @@ async function startAdventure() {
   }
 
   activeSplat = splat;
+  loadCollider(world.colliderUrl || "");
   plane.position.set(...world.spawn);
   plane.visible = true;
   portalGroup.position.set(...world.portal);
@@ -1189,6 +1263,7 @@ async function activateWorldById(id: string) {
   }
 
   activeSplat = nextSplat;
+  loadCollider(world.colliderUrl || "");
   plane.position.set(...world.spawn);
   planeYaw = world.spawnRotation ?? Math.PI;
   planePitch = 0;
@@ -1297,6 +1372,39 @@ function updatePlane(delta: number) {
   velocity.lerp(desiredVelocity, 1 - Math.exp(-4 * delta));
   
   plane.position.addScaledVector(velocity, delta);
+
+  // Mesh collider collision detection and response
+  if (activeColliderMesh) {
+    const raycaster = new THREE.Raycaster();
+    const moveDist = velocity.length() * delta;
+    const direction = velocity.clone().normalize();
+    // Start raycast slightly behind the plane to prevent passing through thin walls
+    const rayOrigin = plane.position.clone().addScaledVector(direction, -0.5);
+    raycaster.set(rayOrigin, direction);
+
+    // Find all intersections within the movement distance + size radius of the plane
+    const intersects = raycaster.intersectObjects(colliderGroup.children, true);
+    const planeRadius = 0.8; // Safe bounding radius for the plane model
+
+    if (intersects.length > 0 && intersects[0].distance < Math.max(moveDist, 0.1) + planeRadius + 0.5) {
+      const hit = intersects[0];
+      
+      // Compute correct normal transformed by the object's parent transforms
+      const normal = hit.face ? hit.face.normal.clone() : new THREE.Vector3(0, 1, 0);
+      normal.applyQuaternion(hit.object.quaternion);
+
+      // Bounce/Push-back response:
+      // 1. Position plane just outside the collision point along the normal
+      plane.position.copy(hit.point).addScaledVector(normal, planeRadius + 0.1);
+
+      // 2. Reflect velocity vector off the collision surface with damping
+      velocity.reflect(normal).multiplyScalar(0.25);
+
+      // 3. Re-align the visual yaw/pitch orientation of the plane with the new velocity
+      planeYaw = Math.atan2(-velocity.z, velocity.x);
+      planePitch = Math.asin(THREE.MathUtils.clamp(velocity.y / (velocity.length() || 1), -0.9, 0.9));
+    }
+  }
 
 
   // Model scale animation (bobbing + speed warp)
@@ -1519,6 +1627,9 @@ adminToggleBtns.forEach(btn => {
         spawnHelper.rotation.y = world.spawnRotation ?? Math.PI;
         spawnHelper.visible = true;
       }
+
+      // Show yellow wireframe collider
+      colliderMaterial.visible = true;
     } else {
       // Just closed the admin panel (using button toggle)
       if (phase !== "playing") {
@@ -1530,6 +1641,9 @@ adminToggleBtns.forEach(btn => {
         spawnHelper.visible = false;
         objectTargetGroup.visible = false;
       }
+
+      // Hide yellow wireframe collider (but keep it active in scene for collisions)
+      colliderMaterial.visible = false;
     }
   });
 });
@@ -1592,6 +1706,7 @@ function onWorldSelectChanged(id: string) {
       orientFallbackMsg.classList.add("hidden-section-ui");
       
       propName.value = world.name;
+      propCollider.value = world.colliderUrl || "";
       propScale.value = String(world.scale);
       propScaleSlider.value = String(world.scale);
       labelScale.textContent = world.scale.toFixed(1);
@@ -1642,12 +1757,17 @@ worldSelectDropdown.addEventListener("change", () => {
   onWorldSelectChanged(worldSelectDropdown.value);
 });
 
+propCollider.addEventListener("change", () => {
+  loadCollider(propCollider.value);
+});
+
 savePropertiesBtn.addEventListener("click", async () => {
   const id = worldSelectDropdown.value;
   const customIndex = customWorldsList.findIndex(w => w.id === id);
   if (customIndex !== -1) {
     const customWorld = customWorldsList[customIndex];
     customWorld.name = propName.value;
+    customWorld.colliderUrl = propCollider.value;
     customWorld.scale = parseFloat(propScale.value) || 4;
     
     // Save rotation in radians
@@ -1839,6 +1959,12 @@ function updateSplatRealtime() {
     activeSplat.scale.setScalar(scaleVal);
     activeSplat.rotation.set(rotXRad, rotYRad, rotZRad);
     activeSplat.position.set(posX, posY, posZ);
+
+    if (colliderGroup) {
+      colliderGroup.scale.setScalar(scaleVal);
+      colliderGroup.rotation.set(rotXRad, rotYRad, rotZRad);
+      colliderGroup.position.set(posX, posY, posZ);
+    }
   }
 
   // Update spawnHelper position and rotation (yaw)
